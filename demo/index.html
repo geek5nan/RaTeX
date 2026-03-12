@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RaTeX Web Demo</title>
+  <!-- Math fonts bundled in package (no CDN needed) -->
+  <link rel="stylesheet" href="../platforms/web/fonts.css" />
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #formula { width: 80%; padding: 8px; font-size: 16px; }
+    canvas { border: 1px solid #ccc; margin-top: 12px; display: block; }
+    .error { color: #c00; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <p style="margin-bottom:12px"><a href="support_table.html">→ Support Table: RaTeX vs KaTeX across 916 formulas</a></p>
+  <h1>RaTeX WASM + Web-Render</h1>
+  <p>Enter a LaTeX formula; parsed and laid out by WASM, rendered on Canvas 2D.</p>
+  <input id="formula" type="text" value="\frac{-b \pm \sqrt{b^2-4ac}}{2a}" placeholder="LaTeX formula" />
+  <button id="render">Render</button>
+  <div id="error" class="error"></div>
+  <canvas id="canvas"></canvas>
+
+  <h2 style="margin-top: 2em;">Drop-in Web Component: <code>&lt;ratex-formula&gt;</code></h2>
+  <p>The formulas below are rendered by the custom element — no JavaScript required.</p>
+  <ratex-formula latex="\frac{-b \pm \sqrt{b^2-4ac}}{2a}" font-size="48" padding="16"></ratex-formula>
+  <ratex-formula latex="x^2 + y^2 = z^2" font-size="40"></ratex-formula>
+
+  <script type="module" src="../platforms/web/dist/ratex-formula.js"></script>
+  <script type="module">
+    // Demo main canvas: uses wasm-pack pkg directly; shares the same WASM module as ratex-formula (same URL loads only once)
+    const { default: init } = await import('../platforms/web/pkg/ratex_wasm.js');
+    await init();
+    const { renderLatex } = await import('../platforms/web/pkg/ratex_wasm.js');
+
+    const formulaInput = document.getElementById('formula');
+    const renderBtn = document.getElementById('render');
+    const errorEl = document.getElementById('error');
+    const canvas = document.getElementById('canvas');
+
+    function drawDisplayList(json, canvas, em = 48, pad = 16) {
+      const dl = JSON.parse(json);
+      const totalH = dl.height + dl.depth;
+      const w = Math.ceil(dl.width * em + 2 * pad);
+      const h = Math.ceil(totalH * em + 2 * pad);
+      canvas.width = Math.max(1, w);
+      canvas.height = Math.max(1, h);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(pad, pad);
+      for (const item of dl.items) {
+        const c = item.color;
+        if (item.type === 'Line') {
+          ctx.fillStyle = `rgb(${c.r*255},${c.g*255},${c.b*255})`;
+          ctx.fillRect(item.x*em, item.y*em - item.thickness*em/2, item.width*em, Math.max(0.5, item.thickness*em));
+        } else if (item.type === 'Rect') {
+          ctx.fillStyle = `rgb(${c.r*255},${c.g*255},${c.b*255})`;
+          ctx.fillRect(item.x*em, item.y*em, item.width*em, item.height*em);
+        } else if (item.type === 'Path') {
+          const ox = item.x * em, oy = item.y * em;
+          ctx.beginPath();
+          for (const c of item.commands) {
+            if (c.type === 'MoveTo') ctx.moveTo(ox + c.x*em, oy + c.y*em);
+            else if (c.type === 'LineTo') ctx.lineTo(ox + c.x*em, oy + c.y*em);
+            else if (c.type === 'CubicTo') ctx.bezierCurveTo(ox+c.x1*em, oy+c.y1*em, ox+c.x2*em, oy+c.y2*em, ox+c.x*em, oy+c.y*em);
+            else if (c.type === 'QuadTo') ctx.quadraticCurveTo(ox+c.x1*em, oy+c.y1*em, ox+c.x*em, oy+c.y*em);
+            else if (c.type === 'Close') ctx.closePath();
+          }
+          ctx.fillStyle = `rgb(${item.color.r*255},${item.color.g*255},${item.color.b*255})`;
+          if (item.fill) ctx.fill(); else ctx.stroke();
+        } else if (item.type === 'GlyphPath') {
+          const px = item.x * em, py = item.y * em, fontSizePx = (item.scale || 1) * em;
+          const char = String.fromCodePoint(item.char_code);
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.font = `${fontSizePx}px KaTeX_Main, "Latin Modern Math", "Cambria Math", serif`;
+          ctx.textBaseline = 'alphabetic';
+          ctx.textAlign = 'left';
+          ctx.fillStyle = `rgb(${item.color.r*255},${item.color.g*255},${item.color.b*255})`;
+          ctx.fillText(char, 0, 0);
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+    }
+
+    function run() {
+      try {
+        errorEl.textContent = '';
+        const json = renderLatex(formulaInput.value.trim());
+        drawDisplayList(json, canvas, 48, 16);
+      } catch (e) {
+        errorEl.textContent = String(e);
+      }
+    }
+
+    renderBtn.addEventListener('click', run);
+    formulaInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+    run();
+  </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+[package]
+name = "ratex-parser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "LaTeX parser for RaTeX"
+
+[[bin]]
+name = "parse"
+path = "src/bin/parse.rs"
+
+[dependencies]
+ratex-types = { workspace = true }
+ratex-font  = { workspace = true }
+ratex-lexer = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+regex-lite = "0.1"
+unicode-normalization = "0.1.25"

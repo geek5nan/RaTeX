@@ -1,0 +1,12 @@
+[package]
+name = "ratex-types"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Shared types for the RaTeX math typesetting engine"
+
+[dependencies]
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

@@ -1,0 +1,11 @@
+/target
+Cargo.lock
+*.pdb
+node_modules/
+venv
+.DS_Store
+# Fonts copied at build from katex (included in npm tarball)
+platforms/web/fonts/
+platforms/web/dist/
+# Local deploy / build copy (do not commit)
+deploy/
