@@ -34,12 +34,11 @@ jobs:
 
       - name: Prepare site
         run: |
-          mkdir -p _site/demo
           mkdir -p _site/platforms/web
-          cp -r demo/ _site/demo/
+          cp -r demo _site/
           cp platforms/web/fonts.css _site/platforms/web/
-          cp -r platforms/web/fonts/ _site/platforms/web/fonts/
-          cp -r platforms/web/pkg/ _site/platforms/web/pkg/
+          cp -r platforms/web/fonts _site/platforms/web/
+          cp -r platforms/web/pkg _site/platforms/web/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
