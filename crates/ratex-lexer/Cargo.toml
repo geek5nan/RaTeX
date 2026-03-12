@@ -3,6 +3,9 @@ name = "ratex-lexer"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
 description = "LaTeX lexer for RaTeX"
 
 [[bin]]

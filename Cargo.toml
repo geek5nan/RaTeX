@@ -21,11 +21,11 @@ homepage = "https://github.com/erweixin/RaTeX"
 documentation = "https://github.com/erweixin/RaTeX#readme"
 
 [workspace.dependencies]
-ratex-types  = { path = "crates/ratex-types" }
-ratex-font   = { path = "crates/ratex-font" }
-ratex-lexer  = { path = "crates/ratex-lexer" }
-ratex-parser = { path = "crates/ratex-parser" }
-ratex-layout = { path = "crates/ratex-layout" }
+ratex-types  = { path = "crates/ratex-types", version = "0.0.2" }
+ratex-font   = { path = "crates/ratex-font", version = "0.0.2" }
+ratex-lexer  = { path = "crates/ratex-lexer", version = "0.0.2" }
+ratex-parser = { path = "crates/ratex-parser", version = "0.0.2" }
+ratex-layout = { path = "crates/ratex-layout", version = "0.0.2" }
 
 phf        = { version = "0.11", features = ["macros"] }
 thiserror  = "1.0"

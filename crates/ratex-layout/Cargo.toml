@@ -3,6 +3,9 @@ name = "ratex-layout"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
 description = "Layout engine for RaTeX"
 
 [dependencies]

@@ -3,6 +3,9 @@ name = "ratex-types"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
 description = "Shared types for the RaTeX math typesetting engine"
 
 [dependencies]
