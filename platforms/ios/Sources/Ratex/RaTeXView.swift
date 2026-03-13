@@ -63,18 +63,16 @@ public class RaTeXView: UIView {
     // MARK: Private
 
     private func rerender() {
-        Task.detached(priority: .userInitiated) { [latex, fontSize] in
-            do {
-                let dl = try RaTeXEngine.shared.parse(latex)
-                let r  = RaTeXRenderer(displayList: dl, fontSize: fontSize)
-                await MainActor.run {
-                    self.renderer = r
-                    self.invalidateIntrinsicContentSize()
-                    self.setNeedsDisplay()
-                }
-            } catch {
-                await MainActor.run { self.onError?(error) }
-            }
+        // Parsing + layout is < 1ms — run synchronously on the main thread.
+        // Async dispatch would cause UITableView/List to lock in a zero height
+        // before the render completes, making cells invisible.
+        do {
+            let dl = try RaTeXEngine.shared.parse(latex)
+            renderer = RaTeXRenderer(displayList: dl, fontSize: fontSize)
+            invalidateIntrinsicContentSize()
+            setNeedsDisplay()
+        } catch {
+            onError?(error)
         }
     }
 }

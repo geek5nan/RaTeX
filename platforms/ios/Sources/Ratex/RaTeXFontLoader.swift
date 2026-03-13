@@ -1,0 +1,96 @@
+// RaTeXFontLoader.swift — Register KaTeX fonts with CoreText so they can be used by the renderer.
+//
+// Usage (call once at app startup):
+//   RaTeXFontLoader.loadFromBundle()               // when fonts are bundled in the app
+//   RaTeXFontLoader.loadFromDirectory(fontsURL)    // point to any directory with .ttf files
+
+import CoreText
+import Foundation
+
+public enum RaTeXFontLoader {
+
+    /// All KaTeX font filenames (without extension) that the renderer may request.
+    static let fontFileNames: [String] = [
+        "KaTeX_AMS-Regular",
+        "KaTeX_Caligraphic-Bold",
+        "KaTeX_Caligraphic-Regular",
+        "KaTeX_Fraktur-Bold",
+        "KaTeX_Fraktur-Regular",
+        "KaTeX_Main-Bold",
+        "KaTeX_Main-BoldItalic",
+        "KaTeX_Main-Italic",
+        "KaTeX_Main-Regular",
+        "KaTeX_Math-BoldItalic",
+        "KaTeX_Math-Italic",
+        "KaTeX_SansSerif-Bold",
+        "KaTeX_SansSerif-Italic",
+        "KaTeX_SansSerif-Regular",
+        "KaTeX_Script-Regular",
+        "KaTeX_Size1-Regular",
+        "KaTeX_Size2-Regular",
+        "KaTeX_Size3-Regular",
+        "KaTeX_Size4-Regular",
+        "KaTeX_Typewriter-Regular",
+    ]
+
+    // MARK: - Public API
+
+    /// Load KaTeX fonts from the main bundle.
+    /// Add all .ttf files to your Xcode project target membership, then call this once on startup.
+    @discardableResult
+    public static func loadFromBundle() -> Int {
+        loadFromBundle(Bundle.main)
+    }
+
+    /// Load KaTeX fonts from a specific bundle (useful for Swift Package resources).
+    @discardableResult
+    public static func loadFromBundle(_ bundle: Bundle) -> Int {
+        var loaded = 0
+        for name in fontFileNames {
+            if let url = bundle.url(forResource: name, withExtension: "ttf") {
+                if register(url) { loaded += 1 }
+            }
+        }
+        return loaded
+    }
+
+    /// Load KaTeX fonts from a directory on disk (development / side-loading).
+    /// Pass the URL to a folder containing the KaTeX .ttf files.
+    @discardableResult
+    public static func loadFromDirectory(_ directory: URL) -> Int {
+        var loaded = 0
+        for name in fontFileNames {
+            let url = directory.appendingPathComponent("\(name).ttf")
+            if FileManager.default.fileExists(atPath: url.path) {
+                if register(url) { loaded += 1 }
+            }
+        }
+        return loaded
+    }
+
+    /// Check whether a specific KaTeX font is already registered.
+    public static func isFontRegistered(_ postScriptName: String) -> Bool {
+        let array = CTFontManagerCopyRegisteredFontDescriptors(.process, false) as NSArray
+        for item in array {
+            let desc = item as! CTFontDescriptor
+            if let name = CTFontDescriptorCopyAttribute(desc, kCTFontNameAttribute) as? String,
+               name == postScriptName { return true }
+        }
+        return false
+    }
+
+    // MARK: - Private
+
+    private static func register(_ url: URL) -> Bool {
+        var error: Unmanaged<CFError>?
+        let ok = CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
+        if !ok, let err = error?.takeRetainedValue() {
+            // Font may already be registered — that's fine
+            let desc = CFErrorCopyDescription(err) as String
+            if !desc.contains("already") && !desc.contains("duplicate") {
+                print("[RaTeX] font registration warning for \(url.lastPathComponent): \(desc)")
+            }
+        }
+        return ok
+    }
+}

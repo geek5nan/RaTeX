@@ -1,5 +1,8 @@
-// display_list.dart — Dart mirror of ratex-types DisplayList / DisplayItem.
-// All types use dart:convert JSON decoding (no code generation required).
+// display_list.dart — Dart mirror of ratex-types DisplayList / DisplayItem
+//
+// JSON uses serde internally-tagged format:
+//   DisplayItem: {"type": "GlyphPath", "x": ..., ...}  (flat)
+//   PathCommand: {"type": "MoveTo",    "x": ..., "y": ...}  (flat)
 
 // MARK: - Top-level output
 
@@ -26,22 +29,20 @@ class DisplayList {
       );
 }
 
-// MARK: - Drawing commands (serde externally-tagged union)
+// MARK: - Drawing commands (internally tagged: {"type": "GlyphPath", ...})
 
 sealed class DisplayItem {
   const DisplayItem();
 
   factory DisplayItem.fromJson(Map<String, dynamic> json) {
-    if (json.containsKey('GlyphPath')) {
-      return GlyphPathItem.fromJson(json['GlyphPath'] as Map<String, dynamic>);
-    } else if (json.containsKey('Line')) {
-      return LineItem.fromJson(json['Line'] as Map<String, dynamic>);
-    } else if (json.containsKey('Rect')) {
-      return RectItem.fromJson(json['Rect'] as Map<String, dynamic>);
-    } else if (json.containsKey('Path')) {
-      return PathItem.fromJson(json['Path'] as Map<String, dynamic>);
+    final type = json['type'] as String;
+    switch (type) {
+      case 'GlyphPath': return GlyphPathItem.fromJson(json);
+      case 'Line':      return LineItem.fromJson(json);
+      case 'Rect':      return RectItem.fromJson(json);
+      case 'Path':      return PathItem.fromJson(json);
+      default: throw FormatException('Unknown DisplayItem type: $type');
     }
-    throw FormatException('Unknown DisplayItem variant: ${json.keys.first}');
   }
 }
 
@@ -63,7 +64,7 @@ class GlyphPathItem extends DisplayItem {
         scale: (j['scale'] as num).toDouble(),
         font: j['font'] as String,
         charCode: j['char_code'] as int,
-        commands: (j['commands'] as List).map((e) => PathCommand.fromJson(e)).toList(),
+        commands: (j['commands'] as List).map((e) => PathCommand.fromJson(e as Map<String, dynamic>)).toList(),
         color: RaTeXColor.fromJson(j['color'] as Map<String, dynamic>),
       );
 }
@@ -112,41 +113,40 @@ class PathItem extends DisplayItem {
 
   factory PathItem.fromJson(Map<String, dynamic> j) => PathItem(
         x: (j['x'] as num).toDouble(), y: (j['y'] as num).toDouble(),
-        commands: (j['commands'] as List).map((e) => PathCommand.fromJson(e)).toList(),
+        commands: (j['commands'] as List).map((e) => PathCommand.fromJson(e as Map<String, dynamic>)).toList(),
         fill: j['fill'] as bool,
         color: RaTeXColor.fromJson(j['color'] as Map<String, dynamic>),
       );
 }
 
-// MARK: - Path commands
+// MARK: - Path commands (internally tagged: {"type": "MoveTo", "x": ..., "y": ...})
 
 sealed class PathCommand {
   const PathCommand();
 
   factory PathCommand.fromJson(Map<String, dynamic> json) {
-    if (json.containsKey('MoveTo')) {
-      final d = json['MoveTo'] as Map<String, dynamic>;
-      return MoveToCmd((d['x'] as num).toDouble(), (d['y'] as num).toDouble());
-    } else if (json.containsKey('LineTo')) {
-      final d = json['LineTo'] as Map<String, dynamic>;
-      return LineToCmd((d['x'] as num).toDouble(), (d['y'] as num).toDouble());
-    } else if (json.containsKey('CubicTo')) {
-      final d = json['CubicTo'] as Map<String, dynamic>;
-      return CubicToCmd(
-        (d['x1'] as num).toDouble(), (d['y1'] as num).toDouble(),
-        (d['x2'] as num).toDouble(), (d['y2'] as num).toDouble(),
-        (d['x']  as num).toDouble(), (d['y']  as num).toDouble(),
-      );
-    } else if (json.containsKey('QuadTo')) {
-      final d = json['QuadTo'] as Map<String, dynamic>;
-      return QuadToCmd(
-        (d['x1'] as num).toDouble(), (d['y1'] as num).toDouble(),
-        (d['x']  as num).toDouble(), (d['y']  as num).toDouble(),
-      );
-    } else if (json.containsKey('Close')) {
-      return const CloseCmd();
+    final type = json['type'] as String;
+    switch (type) {
+      case 'MoveTo':
+        return MoveToCmd((json['x'] as num).toDouble(), (json['y'] as num).toDouble());
+      case 'LineTo':
+        return LineToCmd((json['x'] as num).toDouble(), (json['y'] as num).toDouble());
+      case 'CubicTo':
+        return CubicToCmd(
+          (json['x1'] as num).toDouble(), (json['y1'] as num).toDouble(),
+          (json['x2'] as num).toDouble(), (json['y2'] as num).toDouble(),
+          (json['x']  as num).toDouble(), (json['y']  as num).toDouble(),
+        );
+      case 'QuadTo':
+        return QuadToCmd(
+          (json['x1'] as num).toDouble(), (json['y1'] as num).toDouble(),
+          (json['x']  as num).toDouble(), (json['y']  as num).toDouble(),
+        );
+      case 'Close':
+        return const CloseCmd();
+      default:
+        throw FormatException('Unknown PathCommand type: $type');
     }
-    throw FormatException('Unknown PathCommand variant: ${json.keys.first}');
   }
 }
 
@@ -156,7 +156,7 @@ class CubicToCmd extends PathCommand {
   final double x1, y1, x2, y2, x, y;
   const CubicToCmd(this.x1, this.y1, this.x2, this.y2, this.x, this.y);
 }
-class QuadToCmd extends PathCommand {
+class QuadToCmd  extends PathCommand {
   final double x1, y1, x, y;
   const QuadToCmd(this.x1, this.y1, this.x, this.y);
 }
@@ -172,7 +172,7 @@ class RaTeXColor {
         (j['r'] as num).toDouble(), (j['g'] as num).toDouble(),
         (j['b'] as num).toDouble(), (j['a'] as num).toDouble());
 
-  /// Convert to a Flutter [Color] (32-bit ARGB int).
+  /// Convert to a Flutter Color (32-bit ARGB int).
   int toFlutterColor() {
     final ai = (a * 255).round().clamp(0, 255);
     final ri = (r * 255).round().clamp(0, 255);

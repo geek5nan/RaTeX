@@ -36,4 +36,14 @@ xcodebuild -create-xcframework \
     -headers "$HEADER_DIR" \
     -output "$OUTPUT"
 
+echo "==> Adding module.modulemap to XCFramework headers..."
+for HDIR in "$OUTPUT"/*/Headers; do
+  cat > "$HDIR/module.modulemap" << 'EOF'
+module RaTeXFFI {
+    header "ratex.h"
+    export *
+}
+EOF
+done
+
 echo "==> Done: $OUTPUT"

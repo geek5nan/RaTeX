@@ -8,3 +8,21 @@ platforms/web/dist/
 # Local deploy / build copy (do not commit)
 deploy/
 .gradle/
+.build/
+
+# Xcode
+DerivedData/
+build/
+*.xcuserdata/
+*.xcuserstate
+xcuserdata/
+
+# SwiftPM / demo build artifacts
+.build/
+*.resolved
+
+# iOS demo — generated XCFramework (built locally via build-ios.sh)
+platforms/ios/RaTeX.xcframework/
+
+# macOS
+.DS_Store
