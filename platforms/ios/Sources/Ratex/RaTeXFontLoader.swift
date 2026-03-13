@@ -1,7 +1,8 @@
 // RaTeXFontLoader.swift — Register KaTeX fonts with CoreText so they can be used by the renderer.
 //
 // Usage (call once at app startup):
-//   RaTeXFontLoader.loadFromBundle()               // when fonts are bundled in the app
+//   RaTeXFontLoader.loadFromPackageBundle()        // Swift Package Manager integration (recommended)
+//   RaTeXFontLoader.loadFromBundle()               // when fonts are manually added to the app bundle
 //   RaTeXFontLoader.loadFromDirectory(fontsURL)    // point to any directory with .ttf files
 
 import CoreText
@@ -34,6 +35,20 @@ public enum RaTeXFontLoader {
     ]
 
     // MARK: - Public API
+
+#if SWIFT_PACKAGE
+    /// Load KaTeX fonts bundled with the Swift Package.
+    /// Call this once at app startup when integrating via Swift Package Manager.
+    ///
+    /// ```swift
+    /// // In your App or AppDelegate init:
+    /// RaTeXFontLoader.loadFromPackageBundle()
+    /// ```
+    @discardableResult
+    public static func loadFromPackageBundle() -> Int {
+        loadFromBundle(Bundle.module)
+    }
+#endif
 
     /// Load KaTeX fonts from the main bundle.
     /// Add all .ttf files to your Xcode project target membership, then call this once on startup.

@@ -35,15 +35,19 @@ open demo/ios/RaTeXDemo/RaTeXDemo.xcodeproj
 
 Select an iPhone simulator and press **Run (⌘R)**.
 
-> **Fonts**: During development, KaTeX fonts are loaded directly from
-> `web/fonts/` in the repo (via `#file` path resolution at runtime).
+> **Fonts**: During development, KaTeX fonts are loaded from
+> `platforms/ios/Sources/RaTeX/Fonts/` via `#file` path resolution at runtime.
 > No extra setup needed.
 
 ## Step 3 — Run on device
 
-Add KaTeX `.ttf` files to the Xcode target membership, then fonts load
-from the app bundle automatically. See `platforms/ios/README.md` for the
-full integration guide.
+The demo falls back to the repo font path at runtime, which only works in the
+Simulator or when running from source. For a real device build, add the `.ttf`
+files from `platforms/ios/Sources/RaTeX/Fonts/` to the Xcode target membership.
+
+> **Note**: Apps integrating via Swift Package Manager don't need any of this —
+> just call `RaTeXFontLoader.loadFromPackageBundle()` once at startup and fonts
+> are loaded automatically from the package bundle.
 
 ## Project structure
 

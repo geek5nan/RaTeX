@@ -14,21 +14,26 @@ struct RaTeXDemoApp: App {
     }
 
     private func loadFonts() {
-        // 优先从 App Bundle 加载（生产环境：把 TTF 文件加入 Xcode 项目 target）
+        // 生产环境推荐：通过 SPM 集成时调用 RaTeXFontLoader.loadFromPackageBundle()
+        // 字体已随包内置，一行搞定，无需下面的回退逻辑。
+        //
+        // 本 Demo 直接引用源文件（非 SPM），故依次尝试：
+        // 1. App Bundle（手动把 TTF 加入 Xcode target 时生效）
+        // 2. 仓库内字体目录（开发期回退，设备/App Store 不可用）
+
         let bundleLoaded = RaTeXFontLoader.loadFromBundle()
         if bundleLoaded > 0 {
             print("[RaTeX] Loaded \(bundleLoaded) fonts from bundle")
             return
         }
 
-        // 开发期间回退：直接读取 web 平台的字体目录
-        // 这个路径在真实设备/App Store 分发时不可用，需改为 bundle 方式
+        // 开发回退：从仓库内 platforms/ios/Sources/RaTeX/Fonts/ 加载
         let devFontsPath = URL(fileURLWithPath: #file)
             .deletingLastPathComponent()           // demo/ios/RaTeXDemo/RaTeXDemo/
             .deletingLastPathComponent()           // demo/ios/RaTeXDemo/
             .deletingLastPathComponent()           // demo/ios/
             .deletingLastPathComponent()           // demo/ → repo root
-            .appendingPathComponent("web/fonts")
+            .appendingPathComponent("platforms/ios/Sources/RaTeX/Fonts")
 
         let devLoaded = RaTeXFontLoader.loadFromDirectory(devFontsPath)
         if devLoaded > 0 {

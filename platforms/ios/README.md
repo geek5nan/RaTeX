@@ -49,16 +49,25 @@ This produces `platforms/ios/RaTeX.xcframework`.
 
 ## Add to your Xcode project
 
-### Option A — Swift Package (recommended)
+### Option A — Swift Package Manager (recommended)
 
-In Xcode: **File → Add Package Dependencies** → point to the local path
-`platforms/ios/` (or your fork URL). Select the `RaTeX` product.
+**Published release** — In Xcode: **File → Add Package Dependencies**, enter
+the GitHub repo URL and select the `RaTeX` product. Then call once at startup:
+
+```swift
+RaTeXFontLoader.loadFromPackageBundle()   // loads KaTeX fonts from the package bundle
+```
+
+**Local development** — After building the XCFramework, point Xcode to the
+repo root (`File → Add Package Dependencies → Add Local…`).
 
 ### Option B — Manual
 
-1. Drag `RaTeX.xcframework` into your Xcode project.
+1. Drag `platforms/ios/RaTeX.xcframework` into your Xcode project.
 2. In **Build Phases → Link Binary With Libraries**, ensure it is listed.
-3. Copy the `Sources/RaTeX/*.swift` files into your project.
+3. Copy the `platforms/ios/Sources/RaTeX/*.swift` files into your project.
+4. Add the KaTeX `.ttf` files from `platforms/ios/Sources/RaTeX/Fonts/` to your
+   target, then call `RaTeXFontLoader.loadFromBundle()` at startup.
 
 ---
 
