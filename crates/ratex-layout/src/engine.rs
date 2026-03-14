@@ -17,6 +17,8 @@ pub struct LayoutOptions {
     pub color: Color,
     /// When set (e.g. in align/aligned), cap relation spacing to this many mu for consistency.
     pub align_relation_spacing: Option<f64>,
+    /// When inside \\left...\\right, the stretch height for \\middle delimiters (second pass only).
+    pub leftright_delim_height: Option<f64>,
 }
 
 impl Default for LayoutOptions {
@@ -25,6 +27,7 @@ impl Default for LayoutOptions {
             style: MathStyle::Display,
             color: Color::BLACK,
             align_relation_spacing: None,
+            leftright_delim_height: None,
         }
     }
 }
@@ -43,6 +46,7 @@ impl LayoutOptions {
             style,
             color: self.color,
             align_relation_spacing: self.align_relation_spacing,
+            leftright_delim_height: self.leftright_delim_height,
         }
     }
 
@@ -51,6 +55,7 @@ impl LayoutOptions {
             style: self.style,
             color,
             align_relation_spacing: self.align_relation_spacing,
+            leftright_delim_height: self.leftright_delim_height,
         }
     }
 }
@@ -384,7 +389,20 @@ fn layout_node(node: &ParseNode, options: &LayoutOptions) -> LayoutBox {
         }
 
         ParseNode::Middle { delim, .. } => {
-            make_stretchy_delim(delim, 1.0, options)
+            match options.leftright_delim_height {
+                Some(h) => make_stretchy_delim(delim, h, options),
+                None => {
+                    // First pass inside \left...\right: reserve width but don't affect inner height.
+                    let placeholder = make_stretchy_delim(delim, 1.0, options);
+                    LayoutBox {
+                        width: placeholder.width,
+                        height: 0.0,
+                        depth: 0.0,
+                        content: BoxContent::Empty,
+                        color: options.color,
+                    }
+                }
+            }
         }
 
         ParseNode::HtmlMathMl { html, .. } => {
@@ -1454,24 +1472,122 @@ fn layout_accent(
 // Left/Right stretchy delimiters
 // ============================================================================
 
+/// Returns true if the node (or any descendant) is a Middle node.
+fn node_contains_middle(node: &ParseNode) -> bool {
+    match node {
+        ParseNode::Middle { .. } => true,
+        ParseNode::OrdGroup { body, .. } | ParseNode::MClass { body, .. } => {
+            body.iter().any(node_contains_middle)
+        }
+        ParseNode::SupSub { base, sup, sub, .. } => {
+            base.as_deref().is_some_and(node_contains_middle)
+                || sup.as_deref().is_some_and(node_contains_middle)
+                || sub.as_deref().is_some_and(node_contains_middle)
+        }
+        ParseNode::GenFrac { numer, denom, .. } => {
+            node_contains_middle(numer) || node_contains_middle(denom)
+        }
+        ParseNode::Sqrt { body, index, .. } => {
+            node_contains_middle(body) || index.as_deref().is_some_and(node_contains_middle)
+        }
+        ParseNode::Accent { base, .. } | ParseNode::AccentUnder { base, .. } => {
+            node_contains_middle(base)
+        }
+        ParseNode::Op { body, .. } => body
+            .as_ref()
+            .is_some_and(|b| b.iter().any(node_contains_middle)),
+        ParseNode::LeftRight { body, .. } => body.iter().any(node_contains_middle),
+        ParseNode::OperatorName { body, .. } => body.iter().any(node_contains_middle),
+        ParseNode::Font { body, .. } => node_contains_middle(body),
+        ParseNode::Text { body, .. }
+        | ParseNode::Color { body, .. }
+        | ParseNode::Styling { body, .. }
+        | ParseNode::Sizing { body, .. } => body.iter().any(node_contains_middle),
+        ParseNode::Overline { body, .. } | ParseNode::Underline { body, .. } => {
+            node_contains_middle(body)
+        }
+        ParseNode::Phantom { body, .. } => body.iter().any(node_contains_middle),
+        ParseNode::VPhantom { body, .. } | ParseNode::Smash { body, .. } => {
+            node_contains_middle(body)
+        }
+        ParseNode::Array { body, .. } => body
+            .iter()
+            .any(|row| row.iter().any(node_contains_middle)),
+        ParseNode::Enclose { body, .. }
+        | ParseNode::Lap { body, .. }
+        | ParseNode::RaiseBox { body, .. }
+        | ParseNode::VCenter { body, .. } => node_contains_middle(body),
+        ParseNode::Pmb { body, .. } => body.iter().any(node_contains_middle),
+        ParseNode::XArrow { body, below, .. } => {
+            node_contains_middle(body) || below.as_deref().is_some_and(node_contains_middle)
+        }
+        ParseNode::MathChoice {
+            display,
+            text,
+            script,
+            scriptscript,
+            ..
+        } => {
+            display.iter().any(node_contains_middle)
+                || text.iter().any(node_contains_middle)
+                || script.iter().any(node_contains_middle)
+                || scriptscript.iter().any(node_contains_middle)
+        }
+        ParseNode::HorizBrace { base, .. } => node_contains_middle(base),
+        _ => false,
+    }
+}
+
+/// Returns true if any node in the slice (recursing into all container nodes) is a Middle node.
+fn body_contains_middle(nodes: &[ParseNode]) -> bool {
+    nodes.iter().any(node_contains_middle)
+}
+
 fn layout_left_right(
     body: &[ParseNode],
     left_delim: &str,
     right_delim: &str,
     options: &LayoutOptions,
 ) -> LayoutBox {
-    let inner = layout_expression(body, options, true);
-    let metrics = options.metrics();
+    let (inner, total_height) = if body_contains_middle(body) {
+        // First pass: layout with no delim height so \middle doesn't inflate inner size.
+        let opts_first = LayoutOptions {
+            leftright_delim_height: None,
+            ..options.clone()
+        };
+        let inner_first = layout_expression(body, &opts_first, true);
+        let metrics = options.metrics();
+        let inner_height = inner_first.height;
+        let inner_depth = inner_first.depth;
+        let axis = metrics.axis_height;
+        let max_dist = (inner_height - axis).max(inner_depth + axis);
+        let delim_factor = 901.0;
+        let delim_extend = 5.0 / metrics.pt_per_em;
+        let total_height =
+            (max_dist / 500.0 * delim_factor).max(2.0 * max_dist - delim_extend);
+        // Second pass: layout with total_height so \middle stretches to match \left and \right.
+        let opts_second = LayoutOptions {
+            leftright_delim_height: Some(total_height),
+            ..options.clone()
+        };
+        let inner_second = layout_expression(body, &opts_second, true);
+        (inner_second, total_height)
+    } else {
+        let inner = layout_expression(body, options, true);
+        let metrics = options.metrics();
+        let inner_height = inner.height;
+        let inner_depth = inner.depth;
+        let axis = metrics.axis_height;
+        let max_dist = (inner_height - axis).max(inner_depth + axis);
+        let delim_factor = 901.0;
+        let delim_extend = 5.0 / metrics.pt_per_em;
+        let total_height =
+            (max_dist / 500.0 * delim_factor).max(2.0 * max_dist - delim_extend);
+        (inner, total_height)
+    };
 
     let inner_height = inner.height;
     let inner_depth = inner.depth;
-
-    let axis = metrics.axis_height;
-    let max_dist = (inner_height - axis).max(inner_depth + axis);
-    let delim_factor = 901.0;
-    let delim_extend = 5.0 / metrics.pt_per_em;
-    let total_height =
-        (max_dist / 500.0 * delim_factor).max(2.0 * max_dist - delim_extend);
 
     let left_box = make_stretchy_delim(left_delim, total_height, options);
     let right_box = make_stretchy_delim(right_delim, total_height, options);
