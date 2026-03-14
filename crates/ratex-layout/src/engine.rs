@@ -1994,9 +1994,9 @@ fn layout_enclose(
         return layout_angl(body, options);
     }
 
-    // \cancel, \bcancel, \xcancel, \sout: strike-through overlays — just show body for now
+    // \cancel, \bcancel, \xcancel, \sout: strike-through overlays
     if matches!(label, "\\cancel" | "\\bcancel" | "\\xcancel" | "\\sout") {
-        return layout_node(body, options);
+        return layout_cancel(label, body, options);
     }
 
     // KaTeX defaults: fboxpad = 3pt, fboxrule = 0.4pt
@@ -2050,6 +2050,81 @@ fn layout_raisebox(shift: f64, body: &ParseNode, options: &LayoutOptions) -> Lay
             body: Box::new(inner),
             shift,
         },
+        color: options.color,
+    }
+}
+
+/// Layout \cancel, \bcancel, \xcancel, \sout — body with strike-through line(s) overlay.
+/// Line extends beyond content (like KaTeX/fixtures) and uses ~45° diagonal for \cancel/\bcancel.
+fn layout_cancel(
+    label: &str,
+    body: &ParseNode,
+    options: &LayoutOptions,
+) -> LayoutBox {
+    use crate::layout_box::BoxContent;
+    let inner = layout_node(body, options);
+    let w = inner.width.max(0.01);
+    let h = inner.height;
+    let d = inner.depth;
+    // Extend stroke beyond content on both ends (match fixtures 0074, 0146)
+    let pad = 0.14_f64;
+
+    let commands: Vec<PathCommand> = match label {
+        "\\cancel" => {
+            // Diagonal top-right to bottom-left (~45°), extended beyond box
+            vec![
+                PathCommand::MoveTo { x: -pad, y: d + pad },
+                PathCommand::LineTo { x: w + pad, y: -h - pad },
+            ]
+        }
+        "\\bcancel" => {
+            // Diagonal top-left to bottom-right (~45°), extended beyond box
+            vec![
+                PathCommand::MoveTo { x: w + pad, y: d + pad },
+                PathCommand::LineTo { x: -pad, y: -h - pad },
+            ]
+        }
+        "\\xcancel" => {
+            // Both diagonals, extended
+            vec![
+                PathCommand::MoveTo { x: -pad, y: d + pad },
+                PathCommand::LineTo { x: w + pad, y: -h - pad },
+                PathCommand::MoveTo { x: w + pad, y: d + pad },
+                PathCommand::LineTo { x: -pad, y: -h - pad },
+            ]
+        }
+        "\\sout" => {
+            // Horizontal line through vertical center, extended
+            let mid_y = (d - h) * 0.5_f64;
+            vec![
+                PathCommand::MoveTo { x: -pad, y: mid_y },
+                PathCommand::LineTo { x: w + pad, y: mid_y },
+            ]
+        }
+        _ => vec![],
+    };
+
+    let line_w = w + 2.0 * pad;
+    let line_h = h + pad;
+    let line_d = d + pad;
+    let line_box = LayoutBox {
+        width: line_w,
+        height: line_h,
+        depth: line_d,
+        content: BoxContent::SvgPath {
+            commands,
+            fill: false,
+        },
+        color: options.color,
+    };
+
+    // Draw line first (behind), then body on top. Line box is wider so stroke extends past content.
+    let body_shifted = make_hbox(vec![LayoutBox::new_kern(-line_w), inner]);
+    LayoutBox {
+        width: w,
+        height: h,
+        depth: d,
+        content: BoxContent::HBox(vec![line_box, body_shifted]),
         color: options.color,
     }
 }
