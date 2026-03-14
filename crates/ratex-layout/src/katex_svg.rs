@@ -911,8 +911,35 @@ pub fn katex_stretchy_path(label: &str, width_em: f64) -> Option<(Vec<PathComman
             let x_r = width_em - 400_000.0 * s;
             let lc = make_cmds(data.paths[0], 0.0)?;
             let rc = make_cmds(data.paths[1], x_r)?;
-            let mut out = clip_path_to_rect(&lc, 0.0, width_em, y_min, y_max);
-            out.extend(clip_path_to_rect(&rc, 0.0, width_em, y_min, y_max));
+            let is_xmapsto = data.paths[0] == "leftmapsto" && data.paths[1] == "rightarrow";
+            let out = if is_xmapsto {
+                // xmapsto: draw as one path so the horizontal shaft is guaranteed. KaTeX LEFTMAPSTO
+                // has vertical bar at x=0..40 and shaft 40..400000; we draw left bar only, then
+                // explicit shaft rect (from KaTeX viewBox 400000×522: y 241–281), then right arrow.
+                // Shaft must not extend left of the vertical bar: use shaft_x_end >= left_bar_x_max.
+                // Start the shaft slightly left of left_bar_x_max (~1px) so the intersection pixel
+                // with the vertical bar is not clipped away by the boundary.
+                let left_bar_x_max = 40.0 * s; // 0.04 em, right edge of left vertical bar
+                let shaft_overlap = 0.1_f64; // ~1px in em to keep the corner pixel
+                let shaft_x_start = (left_bar_x_max - shaft_overlap).max(0.0);
+                let shaft_y_top = (241.0 - vb_cy) * s;
+                let shaft_y_bot = (281.0 - vb_cy) * s;
+                let shaft_x_end = x_r.max(left_bar_x_max);
+                let mut cmds = clip_path_to_rect(&lc, 0.0, left_bar_x_max, y_min, y_max);
+                if shaft_x_end > shaft_x_start {
+                    cmds.push(PathCommand::MoveTo { x: shaft_x_start, y: shaft_y_top });
+                    cmds.push(PathCommand::LineTo { x: shaft_x_end, y: shaft_y_top });
+                    cmds.push(PathCommand::LineTo { x: shaft_x_end, y: shaft_y_bot });
+                    cmds.push(PathCommand::LineTo { x: shaft_x_start, y: shaft_y_bot });
+                    cmds.push(PathCommand::Close);
+                }
+                cmds.extend(clip_path_to_rect(&rc, 0.0, width_em, y_min, y_max));
+                cmds
+            } else {
+                let mut cmds = clip_path_to_rect(&lc, 0.0, width_em, y_min, y_max);
+                cmds.extend(clip_path_to_rect(&rc, 0.0, width_em, y_min, y_max));
+                cmds
+            };
             Some((out, height_em))
         }
         3 => {
