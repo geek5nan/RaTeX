@@ -470,6 +470,7 @@ fn parse_svg_path(d: &str) -> Vec<PathCommand> {
     let mut i = 0;
     let mut cx = 0.0_f64;
     let mut cy = 0.0_f64;
+    let mut subpath_start = (0.0_f64, 0.0_f64);
     let mut last_cmd = b'M';
 
     while i < tokens.len() {
@@ -482,12 +483,14 @@ fn parse_svg_path(d: &str) -> Vec<PathCommand> {
             b'M' => {
                 let (x, y) = read2(&tokens, &mut i);
                 cx = x; cy = y;
+                subpath_start = (cx, cy);
                 cmds.push(PathCommand::MoveTo { x, y });
                 last_cmd = b'L';
             }
             b'm' => {
                 let (dx, dy) = read2(&tokens, &mut i);
                 cx += dx; cy += dy;
+                subpath_start = (cx, cy);
                 cmds.push(PathCommand::MoveTo { x: cx, y: cy });
                 last_cmd = b'l';
             }
@@ -579,6 +582,9 @@ fn parse_svg_path(d: &str) -> Vec<PathCommand> {
             }
             b'Z' | b'z' => {
                 cmds.push(PathCommand::Close);
+                // Per SVG spec: after closepath, current point returns to subpath start.
+                cx = subpath_start.0;
+                cy = subpath_start.1;
                 last_cmd = b'M';
             }
             _ => { i += 1; }
@@ -936,8 +942,14 @@ pub fn katex_stretchy_path(label: &str, width_em: f64) -> Option<(Vec<PathComman
                 cmds.extend(clip_path_to_rect(&rc, 0.0, width_em, y_min, y_max));
                 cmds
             } else {
-                let mut cmds = clip_path_to_rect(&lc, 0.0, width_em, y_min, y_max);
-                cmds.extend(clip_path_to_rect(&rc, 0.0, width_em, y_min, y_max));
+                // Split at the midpoint so each half-arrow's shaft bars don't extend
+                // into the opposite arrowhead region.  The left path owns [0, mid]
+                // and the right path owns [mid, width_em].  This prevents shaft bar
+                // rectangles from covering the opposite arrowhead (e.g. doubleleftarrow
+                // shaft bars covering the doublerightarrow arrowhead area).
+                let mid = width_em / 2.0;
+                let mut cmds = clip_path_to_rect(&lc, 0.0, mid, y_min, y_max);
+                cmds.extend(clip_path_to_rect(&rc, mid, width_em, y_min, y_max));
                 cmds
             };
             Some((out, height_em))

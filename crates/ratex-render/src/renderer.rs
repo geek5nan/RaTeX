@@ -356,6 +356,35 @@ fn render_path(
     color: &Color,
     em: f32,
 ) {
+    // For filled paths, render each subpath (delimited by MoveTo) as a separate
+    // fill_path call.  KaTeX stretchy arrows are assembled from multiple path
+    // components (e.g. "lefthook" + "rightarrow") whose winding directions can
+    // be opposite.  Combining them into a single fill_path with FillRule::Winding
+    // causes the shaft region to cancel out (net winding = 0 → unfilled).
+    // Drawing each subpath independently avoids cross-component winding interactions.
+    if fill {
+        let mut start = 0;
+        for i in 1..commands.len() {
+            if matches!(commands[i], ratex_types::path_command::PathCommand::MoveTo { .. }) {
+                render_path_segment(pixmap, x, y, &commands[start..i], fill, color, em);
+                start = i;
+            }
+        }
+        render_path_segment(pixmap, x, y, &commands[start..], fill, color, em);
+        return;
+    }
+    render_path_segment(pixmap, x, y, commands, fill, color, em);
+}
+
+fn render_path_segment(
+    pixmap: &mut Pixmap,
+    x: f32,
+    y: f32,
+    commands: &[ratex_types::path_command::PathCommand],
+    fill: bool,
+    color: &Color,
+    em: f32,
+) {
     let mut builder = PathBuilder::new();
     for cmd in commands {
         match cmd {
