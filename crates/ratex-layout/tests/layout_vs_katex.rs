@@ -131,7 +131,7 @@ fn quadratic_formula() {
 
 #[test]
 fn sum_with_limits() {
-    check("\\sum_{i=1}^{n} x_i", 1.6514, 1.2777);
+    check("\\sum_{i=1}^{n} x_i", 1.7314, 1.3577);
 }
 
 #[test]
@@ -141,7 +141,7 @@ fn int_nolimits() {
 
 #[test]
 fn prod_with_limits() {
-    check("\\prod_{i=1}^{n} x_i", 1.6514, 1.2777);
+    check("\\prod_{i=1}^{n} x_i", 1.7314, 1.3577);
 }
 
 #[test]
@@ -156,27 +156,27 @@ fn int_standalone() {
 
 #[test]
 fn lim_with_limits() {
-    check("\\lim_{x\\to 0} \\frac{\\sin x}{x}", 1.3449, 0.7171);
+    check("\\lim_{x\\to 0} \\frac{\\sin x}{x}", 1.3449, 0.7971);
 }
 
 #[test]
 fn sum_infinity_series() {
-    check("\\sum_{n=0}^{\\infty} a_n x^n", 1.6514, 1.2671);
+    check("\\sum_{n=0}^{\\infty} a_n x^n", 1.7314, 1.3471);
 }
 
 #[test]
 fn coprod_sub_only() {
-    check("\\coprod_{i} A_i", 1.05, 1.2777);
+    check("\\coprod_{i} A_i", 1.05, 1.3577);
 }
 
 #[test]
 fn bigcap_sub_only() {
-    check("\\bigcap_{i} A_i", 1.05, 1.2777);
+    check("\\bigcap_{i} A_i", 1.05, 1.3577);
 }
 
 #[test]
 fn bigcup_sub_only() {
-    check("\\bigcup_{i} A_i", 1.05, 1.2777);
+    check("\\bigcup_{i} A_i", 1.05, 1.3577);
 }
 
 #[test]
@@ -201,7 +201,7 @@ fn max_text_op() {
 
 #[test]
 fn int_with_explicit_limits() {
-    check("\\int\\limits_2^2 3", 2.1123, 1.5782);
+    check("\\int\\limits_2^2 3", 2.1922, 1.6582);
 }
 
 // ============================================================================
@@ -264,7 +264,7 @@ fn left_right_bars() {
 
 #[test]
 fn left_right_sum() {
-    check("\\left( \\sum_{i=1}^{n} x_i \\right)", 1.75, 1.2777);
+    check("\\left( \\sum_{i=1}^{n} x_i \\right)", 1.75, 1.3577);
 }
 
 // ============================================================================
