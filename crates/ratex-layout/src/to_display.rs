@@ -419,6 +419,32 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
             emit_box(body, x, y, scale, items);
         }
 
+        BoxContent::Overline { body, rule_thickness } => {
+            emit_box(body, x, y, scale, items);
+            // Rule center is at 2.5 * rule_thickness above the body's top
+            let rule_center_y = y - (body.height + 2.5 * rule_thickness) * scale;
+            items.push(DisplayItem::Line {
+                x,
+                y: rule_center_y,
+                width: lbox.width * scale,
+                thickness: rule_thickness * scale,
+                color: lbox.color,
+            });
+        }
+
+        BoxContent::Underline { body, rule_thickness } => {
+            emit_box(body, x, y, scale, items);
+            // Rule center is at 2.5 * rule_thickness below the body's bottom
+            let rule_center_y = y + (body.depth + 2.5 * rule_thickness) * scale;
+            items.push(DisplayItem::Line {
+                x,
+                y: rule_center_y,
+                width: lbox.width * scale,
+                thickness: rule_thickness * scale,
+                color: lbox.color,
+            });
+        }
+
         BoxContent::Kern | BoxContent::Empty => {}
     }
 }

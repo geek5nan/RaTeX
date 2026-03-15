@@ -2423,12 +2423,16 @@ fn layout_overline(body: &ParseNode, options: &LayoutOptions) -> LayoutBox {
     let metrics = options.metrics();
     let rule = metrics.default_rule_thickness;
 
+    // Total height: body height + 2*rule clearance + rule thickness = body.height + 3*rule
     let height = body_box.height + 3.0 * rule;
     LayoutBox {
         width: body_box.width,
         height,
         depth: body_box.depth,
-        content: BoxContent::HBox(vec![body_box]),
+        content: BoxContent::Overline {
+            body: Box::new(body_box),
+            rule_thickness: rule,
+        },
         color: options.color,
     }
 }
@@ -2438,12 +2442,16 @@ fn layout_underline(body: &ParseNode, options: &LayoutOptions) -> LayoutBox {
     let metrics = options.metrics();
     let rule = metrics.default_rule_thickness;
 
+    // Total depth: body depth + 2*rule clearance + rule thickness = body.depth + 3*rule
     let depth = body_box.depth + 3.0 * rule;
     LayoutBox {
         width: body_box.width,
         height: body_box.height,
         depth,
-        content: BoxContent::HBox(vec![body_box]),
+        content: BoxContent::Underline {
+            body: Box::new(body_box),
+            rule_thickness: rule,
+        },
         color: options.color,
     }
 }
