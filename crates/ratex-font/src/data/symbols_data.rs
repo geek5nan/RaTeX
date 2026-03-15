@@ -1882,8 +1882,8 @@ pub static SYMBOLS: &[SymbolEntry] = &[
     ("\\@varsupsetneqq", 0, 1, "rel", Some('\u{E019}')),
     ("\\@imath", 0, 0, "mathord", Some('\u{E131}')),
     ("\\@jmath", 0, 0, "mathord", Some('\u{E237}')),
-    ("\\@ulcorner", 0, 1, "open", Some('\u{E01C}')),
-    ("\\@urcorner", 0, 1, "close", Some('\u{E01D}')),
-    ("\\@llcorner", 0, 1, "open", Some('\u{E01E}')),
-    ("\\@lrcorner", 0, 1, "close", Some('\u{E01F}')),
+    ("\\@ulcorner", 0, 1, "open", Some('\u{250C}')),
+    ("\\@urcorner", 0, 1, "close", Some('\u{2510}')),
+    ("\\@llcorner", 0, 1, "open", Some('\u{2514}')),
+    ("\\@lrcorner", 0, 1, "close", Some('\u{2518}')),
 ];
