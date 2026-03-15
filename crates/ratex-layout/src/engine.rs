@@ -2471,7 +2471,13 @@ fn layout_spacing_command(text: &str, options: &LayoutOptions) -> LayoutBox {
         "\\!" | "\\negthinspace" => -3.0 * mu,
         "\\negmedspace" => -4.0 * mu,
         "\\negthickspace" => -5.0 * mu,
-        "~" | "\\nobreakspace" | "\\ " => metrics.space,
+        "~" | "\\nobreakspace" | "\\ " | "\\space" => {
+            // KaTeX renders these by placing the U+00A0 glyph (char 160) via mathsym.
+            // Look up its width from MainRegular; fall back to 0.25em (the font-defined value).
+            get_char_metrics(FontId::MainRegular, 160)
+                .map(|m| m.width)
+                .unwrap_or(0.25)
+        }
         "\\quad" => metrics.quad,
         "\\qquad" => 2.0 * metrics.quad,
         "\\enspace" => metrics.quad / 2.0,
