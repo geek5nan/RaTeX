@@ -149,6 +149,20 @@ pub enum BoxContent {
         body: Box<LayoutBox>,
     },
 
+    /// \overline{body}: body with a horizontal rule drawn above it.
+    /// The rule sits `2 * rule_thickness` above the body's top (clearance), and is `rule_thickness` thick.
+    Overline {
+        body: Box<LayoutBox>,
+        rule_thickness: f64,
+    },
+
+    /// \underline{body}: body with a horizontal rule drawn below it.
+    /// The rule sits `2 * rule_thickness` below the body's bottom (clearance), and is `rule_thickness` thick.
+    Underline {
+        body: Box<LayoutBox>,
+        rule_thickness: f64,
+    },
+
     /// Empty placeholder.
     Empty,
 }
