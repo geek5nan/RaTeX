@@ -15,7 +15,7 @@ From repo root: `bash platforms/android/build-android.sh`
 
 ## Add to project
 
-- **Maven:** `implementation("io.ratex:ratex-android:0.0.3")` (after publishing; use `mavenLocal()` / `mavenCentral()` as needed).
+- **Maven:** `implementation("io.github.erweixin:ratex-android:0.0.3")` (after publishing; use `mavenLocal()` / `mavenCentral()` as needed).
 - **Module:** include this folder as `:ratex-android` in settings.gradle and `implementation(project(":ratex-android"))` in app.
 
 ## Fonts

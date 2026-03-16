@@ -15,7 +15,7 @@ NDK 26+、Rust，执行 `cargo install cargo-ndk` 并安装目标：
 
 ## 集成方式
 
-- **Maven：** `implementation("io.ratex:ratex-android:0.0.3")`（需先发布；配好 `mavenLocal()` / `mavenCentral()` 等）。
+- **Maven：** `implementation("io.github.erweixin:ratex-android:0.0.3")`（需先发布；配好 `mavenLocal()` / `mavenCentral()` 等）。
 - **模块：** 在 settings.gradle 里 include 本目录为 `:ratex-android`，app 中 `implementation(project(":ratex-android"))`。
 
 ## 字体

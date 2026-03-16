@@ -38,14 +38,14 @@ dependencies {
 // Maven publish — AAR (with fonts in assets) to Maven Local or remote
 // Override in CI with -PlibraryVersion=x.y.z (e.g. from git tag)
 val libraryVersion = project.findProperty("libraryVersion")?.toString() ?: "0.0.3"
-group = "io.ratex"
+group = "io.github.erweixin"
 version = libraryVersion
 
 afterEvaluate {
     publishing {
         publications {
             create<MavenPublication>("release") {
-                groupId = "io.ratex"
+                groupId = "io.github.erweixin"
                 artifactId = "ratex-android"
                 version = libraryVersion
                 from(components["release"])

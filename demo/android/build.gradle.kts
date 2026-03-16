@@ -23,7 +23,7 @@ gradle.projectsEvaluated {
     publishing {
         publications {
             create<MavenPublication>("release") {
-                groupId = r.group.toString()
+                groupId = "io.github.erweixin"
                 artifactId = "ratex-android"
                 version = r.version.toString()
                 from(r.components["release"])
