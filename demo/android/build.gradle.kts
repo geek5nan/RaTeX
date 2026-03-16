@@ -6,6 +6,9 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
 }
 
+// Nexus Publish 插件用根项目 group 查找 Sonatype staging profile，必须与 publication 的 groupId 一致
+group = "io.github.erweixin"
+
 // Maven Central：根项目发布 ratex-android 并自动 Close & Release（Nexus Publish 插件要求应用在根项目）
 nexusPublishing {
     repositories {
