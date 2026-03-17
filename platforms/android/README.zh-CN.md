@@ -3,6 +3,12 @@
 Android 上原生渲染 LaTeX 数学公式（Kotlin + Canvas），AAR 内含 KaTeX 字体。  
 minSdk 21，targetSdk 34。
 
+## 开箱即用
+
+1. **添加依赖** — 在 app 的 `build.gradle` 中：`implementation("io.github.erweixin:ratex-android:0.0.3")`（或从 Maven Central / 本地发布获取）。
+2. **使用** — 布局里放 `RaTeXView`，代码中设置 LaTeX 与字号（见下方「使用」）；字体会在首次渲染时从 `assets/fonts/` 自动加载，无需手动加载。
+   **可选**：若希望启动时提前加载，可在 Application 或首屏调用 `RaTeXFontLoader.loadFromAssets(context, "fonts")`。
+
 ## 环境
 
 NDK 26+、Rust，执行 `cargo install cargo-ndk` 并安装目标：  
@@ -20,8 +26,7 @@ NDK 26+、Rust，执行 `cargo install cargo-ndk` 并安装目标：
 
 ## 字体
 
-AAR 自带 KaTeX 字体（`assets/fonts/`）。启动时调用一次：  
-`RaTeXFontLoader.loadFromAssets(context, "fonts")`
+AAR 自带 KaTeX 字体（`assets/fonts/`）。**RaTeXView** 会在首次使用时自动加载，无需手动调用。可选：在启动时调用 `RaTeXFontLoader.loadFromAssets(context, "fonts")` 提前加载。
 
 ## 使用
 

@@ -33,21 +33,10 @@ This compiles the Rust engine for all iOS targets and produces
 open demo/ios/RaTeXDemo/RaTeXDemo.xcodeproj
 ```
 
-Select an iPhone simulator and press **Run (⌘R)**.
+Select an iPhone simulator and press **Run (⌘R)**. Demo 开箱即用，无需额外配置。
 
-> **Fonts**: During development, KaTeX fonts are loaded from
-> `platforms/ios/Sources/RaTeX/Fonts/` via `#file` path resolution at runtime.
-> No extra setup needed.
-
-## Step 3 — Run on device
-
-The demo falls back to the repo font path at runtime, which only works in the
-Simulator or when running from source. For a real device build, add the `.ttf`
-files from `platforms/ios/Sources/RaTeX/Fonts/` to the Xcode target membership.
-
-> **Note**: Apps integrating via Swift Package Manager don't need any of this —
-> just call `RaTeXFontLoader.loadFromPackageBundle()` once at startup and fonts
-> are loaded automatically from the package bundle.
+> **Fonts**: KaTeX 字体已通过 Copy Bundle Resources 打入 demo target，首次渲染时由
+> `RaTeXFontLoader.ensureLoaded()` / `loadFromBundle()` 自动加载。其他应用集成时：SPM 使用包内字体；手动集成可将 `platforms/ios/Sources/Ratex/Fonts/` 加入 target 的 Copy Bundle Resources。
 
 ## Project structure
 
@@ -55,9 +44,9 @@ files from `platforms/ios/Sources/RaTeX/Fonts/` to the Xcode target membership.
 demo/ios/RaTeXDemo/
 ├── RaTeXDemo.xcodeproj/     # Xcode project
 └── RaTeXDemo/
-    ├── RaTeXDemoApp.swift   # App entry point, font loading
+    ├── RaTeXDemoApp.swift   # App entry point
     └── ContentView.swift    # Formula list UI
 ```
 
-The library sources live in `platforms/ios/Sources/RaTeX/` and are
-referenced by the Xcode project via relative paths — no copying needed.
+The library sources live in `platforms/ios/Sources/Ratex/` and are
+referenced by the Xcode project via relative paths; Fonts are included as a folder reference (Copy Bundle Resources).

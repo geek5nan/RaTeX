@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		AA000001 /* RaTeX.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA000010 /* RaTeX.xcframework */; settings = {ATTRIBUTES = (Required, ); }; };
 		AA000002 /* RaTeX.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AA000010 /* RaTeX.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		AA0000F1 /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = AA0000F0 /* Fonts */; };
 		AA000003 /* DisplayList.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000020 /* DisplayList.swift */; };
 		AA000004 /* RaTeXEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000021 /* RaTeXEngine.swift */; };
 		AA000005 /* RaTeXRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000022 /* RaTeXRenderer.swift */; };
@@ -32,6 +33,17 @@
 		};
 /* End PBXCopyFilesBuildPhase section */
 
+/* Begin PBXResourcesBuildPhase section */
+		AA0000E1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000F1 /* Fonts in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		AA000010 /* RaTeX.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = "RaTeX.xcframework"; path = "../../../platforms/ios/RaTeX.xcframework"; sourceTree = "<group>"; };
 		AA000020 /* DisplayList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DisplayList.swift; path = "../../../platforms/ios/Sources/RaTeX/DisplayList.swift"; sourceTree = "<group>"; };
@@ -42,6 +54,7 @@
 		AA000030 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AA000031 /* RaTeXDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaTeXDemoApp.swift; sourceTree = "<group>"; };
 		AA000050 /* RaTeXDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RaTeXDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000F0 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fonts; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +74,7 @@
 			children = (
 				AA000071 /* RaTeXDemo */,
 				AA000072 /* RaTeX Sources */,
+				AA0000E0 /* RaTeX Fonts */,
 				AA000073 /* Frameworks */,
 				AA000074 /* Products */,
 			);
@@ -85,6 +99,14 @@
 				AA000024 /* RaTeXFontLoader.swift */,
 			);
 			name = "RaTeX Sources";
+			sourceTree = "<group>";
+		};
+		AA0000E0 /* RaTeX Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000F0 /* Fonts */,
+			);
+			path = "../../../platforms/ios/Sources/Ratex";
 			sourceTree = "<group>";
 		};
 		AA000073 /* Frameworks */ = {
@@ -112,6 +134,7 @@
 			buildPhases = (
 				AA000060 /* Frameworks */,
 				AA000081 /* Sources */,
+				AA0000E1 /* Resources */,
 				AA000040 /* Embed Frameworks */,
 			);
 			buildRules = (

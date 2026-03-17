@@ -100,6 +100,7 @@ class RaTeXView @JvmOverloads constructor(
         }
         renderJob = scope.launch {
             try {
+                RaTeXFontLoader.ensureLoaded(context)
                 val dl = RaTeXEngine.parse(latex)
                 renderer = RaTeXRenderer(dl, fontSize) { RaTeXFontLoader.getTypeface(it) }
                 post {

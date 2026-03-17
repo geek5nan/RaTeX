@@ -1,9 +1,10 @@
 // RaTeXFontLoader.swift — Register KaTeX fonts with CoreText so they can be used by the renderer.
 //
-// Usage (call once at app startup):
-//   RaTeXFontLoader.loadFromPackageBundle()        // Swift Package Manager integration (recommended)
-//   RaTeXFontLoader.loadFromBundle()               // when fonts are manually added to the app bundle
-//   RaTeXFontLoader.loadFromDirectory(fontsURL)    // point to any directory with .ttf files
+// Fonts are loaded automatically on first render (RaTeXView/RaTeXFormula call ensureLoaded()).
+// Optional — call at app startup to load earlier:
+//   RaTeXFontLoader.loadFromPackageBundle()        // Swift Package Manager (recommended)
+//   RaTeXFontLoader.loadFromBundle()               // when fonts are in the app bundle
+//   RaTeXFontLoader.loadFromDirectory(fontsURL)    // custom directory with .ttf files
 
 import CoreText
 import Foundation
@@ -58,12 +59,15 @@ public enum RaTeXFontLoader {
     }
 
     /// Load KaTeX fonts from a specific bundle (useful for Swift Package resources).
+    /// Looks for .ttf at bundle root and in a "Fonts" subdirectory (e.g. Copy Bundle Resources folder).
     @discardableResult
     public static func loadFromBundle(_ bundle: Bundle) -> Int {
         var loaded = 0
         for name in fontFileNames {
-            if let url = bundle.url(forResource: name, withExtension: "ttf") {
-                if register(url) { loaded += 1 }
+            let url = bundle.url(forResource: name, withExtension: "ttf")
+                ?? bundle.url(forResource: name, withExtension: "ttf", subdirectory: "Fonts")
+            if let url = url, register(url) {
+                loaded += 1
             }
         }
         return loaded
@@ -81,6 +85,22 @@ public enum RaTeXFontLoader {
             }
         }
         return loaded
+    }
+
+    private static var didEnsureLoad = false
+
+    /// Ensure KaTeX fonts are loaded. If none are registered, loads from the package bundle
+    /// (SPM) or main bundle. Call is optional — views also call this on first render.
+    @discardableResult
+    public static func ensureLoaded() -> Int {
+        if didEnsureLoad { return 0 }
+        didEnsureLoad = true
+        if isFontRegistered("KaTeX_Main-Regular") { return 0 }
+#if SWIFT_PACKAGE
+        let n = loadFromPackageBundle()
+        if n > 0 { return n }
+#endif
+        return loadFromBundle()
     }
 
     /// Check whether a specific KaTeX font is already registered.

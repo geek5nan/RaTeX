@@ -19,6 +19,20 @@ CustomPaint Widget
 
 ---
 
+## Out of the box
+
+1. **Add dependency** — In `pubspec.yaml`: `ratex_flutter: ^0.0.3`, then run `flutter pub get`. No native build required — the published package includes prebuilt Android `.so` and iOS XCFramework.
+2. **Use** — Use `RaTeXWidget`:
+   ```dart
+   RaTeXWidget(
+     latex: r'\frac{-b \pm \sqrt{b^2-4ac}}{2a}',
+     fontSize: 28,
+     onError: (e) => debugPrint('RaTeX: $e'),
+   )
+   ```
+
+---
+
 ## Installation
 
 ### From pub.dev (recommended)

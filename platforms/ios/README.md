@@ -19,6 +19,20 @@ UIView / SwiftUI View
 
 ---
 
+## Out of the box
+
+1. **Add dependency** — In Xcode: **File → Add Package Dependencies**, enter the repo URL `https://github.com/erweixin/RaTeX`, select the `RaTeX` library.
+2. **Use** — Use `RaTeXView` or `RaTeXFormula`; fonts load automatically on first render.
+   ```swift
+   // SwiftUI
+   RaTeXFormula(latex: #"\frac{-b \pm \sqrt{b^2-4ac}}{2a}"#, fontSize: 24)
+   ```
+   **Optional:** To preload fonts at startup (e.g. to avoid slight delay on first formula), call `RaTeXFontLoader.loadFromPackageBundle()` when the app launches.
+
+**Local development** (when editing RaTeX source): From the repo root run `bash platforms/ios/build-ios.sh`, then in Xcode **File → Add Package Dependencies → Add Local…** and select the RaTeX repo root.
+
+---
+
 ## Prerequisites
 
 | Tool | Version |
@@ -52,11 +66,7 @@ This produces `platforms/ios/RaTeX.xcframework`.
 ### Option A — Swift Package Manager (recommended)
 
 **Published release** — In Xcode: **File → Add Package Dependencies**, enter
-the GitHub repo URL and select the `RaTeX` product. Then call once at startup:
-
-```swift
-RaTeXFontLoader.loadFromPackageBundle()   // loads KaTeX fonts from the package bundle
-```
+the GitHub repo URL and select the `RaTeX` product. Fonts load automatically on first render; optionally call `RaTeXFontLoader.loadFromPackageBundle()` at startup to load earlier.
 
 **Local development** — After building the XCFramework, point Xcode to the
 repo root (`File → Add Package Dependencies → Add Local…`).
@@ -66,8 +76,7 @@ repo root (`File → Add Package Dependencies → Add Local…`).
 1. Drag `platforms/ios/RaTeX.xcframework` into your Xcode project.
 2. In **Build Phases → Link Binary With Libraries**, ensure it is listed.
 3. Copy the `platforms/ios/Sources/RaTeX/*.swift` files into your project.
-4. Add the KaTeX `.ttf` files from `platforms/ios/Sources/RaTeX/Fonts/` to your
-   target, then call `RaTeXFontLoader.loadFromBundle()` at startup.
+4. Add the `Fonts` folder from `platforms/ios/Sources/Ratex/Fonts/` to your target’s **Copy Bundle Resources**; fonts load automatically on first render, or call `RaTeXFontLoader.loadFromBundle()` at startup.
 
 ---
 

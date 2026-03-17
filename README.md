@@ -1,8 +1,10 @@
 # RaTeX
 
+[简体中文](README.zh-CN.md) | **English**
+
 **KaTeX-compatible math rendering engine in pure Rust — no JavaScript, no WebView, no DOM.**
 
-Parse LaTeX, lay it out with TeX rules, and render it natively on any platform.
+Parse LaTeX, lay it out with TeX rules, and render it natively on any platform. Glue layers are ready — use out of the box on every platform.
 
 ```
 \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}   →   iOS · Android · Flutter · React Native · Web · PNG
@@ -37,10 +39,12 @@ RaTeX cuts the web stack out entirely. One Rust core, one display list, every pl
 - **~80%** visual similarity to KaTeX (golden test score against KaTeX reference renders)
 - **One display list** output: flat, serializable drawing commands consumed by any renderer
 - **C ABI** (`ratex-ffi`) for FFI from Swift, Kotlin, Dart, Go, C++
+- **Platform glue layers**: iOS / Android / Flutter / React Native bindings ready — **out of the box**
 - **WASM** (`ratex-wasm`) for drop-in browser use via `<ratex-formula>` Web Component
 - **Server-side PNG** via tiny-skia — no browser needed
 
-**[→ Live Demo](https://erweixin.github.io/RaTeX/demo/index.html)** — type LaTeX and compare RaTeX (Rust/WASM) vs KaTeX side-by-side · **[→ Support table](https://erweixin.github.io/RaTeX/demo/support_table.html)** — RaTeX vs KaTeX across all 916 test formulas
+**[→ Live Demo](https://erweixin.github.io/RaTeX/demo/index.html)** — type LaTeX and compare RaTeX (Rust/WASM) vs KaTeX side-by-side · 
+**[→ Support table](https://erweixin.github.io/RaTeX/demo/support_table.html)** — RaTeX vs KaTeX across all 916 test formulas
 
 ---
 
@@ -50,12 +54,12 @@ RaTeX cuts the web stack out entirely. One Rust core, one display list, every pl
 |---|---|---|
 | **Web** | WASM → Canvas 2D · `<ratex-formula>` Web Component | Working |
 | **Server / CI** | tiny-skia → PNG rasterizer | Working |
-| **iOS** | Swift/ObjC bindings to C ABI | Binding layer in progress |
-| **Android** | JNI → Kotlin/Java | Binding layer in progress |
+| **iOS** | Swift/ObjC bindings to C ABI · XCFramework | Out of the box |
+| **Android** | JNI → Kotlin/Java · AAR | Out of the box |
 | **React Native** | Native module via C ABI | Binding layer in progress |
-| **Flutter** | Dart FFI via C ABI | Binding layer in progress |
+| **Flutter** | Dart FFI via C ABI | Out of the box |
 
-> The Rust core is complete. What remains is the thin per-platform binding layer.
+> Rust core and per-platform glue layers are ready; integrate and ship.
 
 ---
 
@@ -182,6 +186,15 @@ echo '\sum_{i=1}^n i = \frac{n(n+1)}{2}' | cargo run --release -p ratex-render -
 ```
 
 See [`platforms/web/README.md`](platforms/web/README.md) for the full WASM + web-render setup.
+
+### Platform glue layers (out of the box)
+
+| Platform | Docs |
+|----------|------|
+| iOS | [`platforms/ios/README.md`](platforms/ios/README.md) — XCFramework + Swift/CoreGraphics |
+| Android | [`platforms/android/README.md`](platforms/android/README.md) — AAR + Kotlin/Canvas |
+| Flutter | [`platforms/flutter/README.md`](platforms/flutter/README.md) — Dart FFI |
+| Web | [`platforms/web/README.md`](platforms/web/README.md) — WASM + Web Component |
 
 ### Run tests
 

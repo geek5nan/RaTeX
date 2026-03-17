@@ -66,6 +66,7 @@ public class RaTeXView: UIView {
         // Parsing + layout is < 1ms — run synchronously on the main thread.
         // Async dispatch would cause UITableView/List to lock in a zero height
         // before the render completes, making cells invisible.
+        RaTeXFontLoader.ensureLoaded()
         do {
             let dl = try RaTeXEngine.shared.parse(latex)
             renderer = RaTeXRenderer(displayList: dl, fontSize: fontSize)

@@ -29,9 +29,9 @@ let package = Package(
         .target(
             name: "RaTeX",
             dependencies: ["RaTeXFFI"],
-            path: "platforms/ios/Sources/RaTeX",
+            path: "platforms/ios/Sources/Ratex",
             resources: [
-                // KaTeX fonts — loaded automatically via RaTeXFontLoader.loadFromPackageBundle()
+                // KaTeX 字体随包内置，ensureLoaded()/loadFromPackageBundle() 开箱即用
                 .copy("Fonts"),
             ]
         ),

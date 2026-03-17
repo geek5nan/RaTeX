@@ -1,8 +1,8 @@
 // RaTeXFontLoader.kt — Load KaTeX fonts for glyph rendering (mirrors iOS RaTeXFontLoader).
 //
-// GlyphPath from Rust contains placeholder rectangles, not outline paths. Glyphs must be drawn
-// with Typeface + Canvas.drawText. Call loadFromAssets() once at app startup (e.g. in Application
-// or MainActivity), then RaTeXRenderer will use getTypeface() when drawing.
+// GlyphPath from Rust contains placeholder rectangles, not outline paths. Glyphs are drawn
+// with Typeface + Canvas.drawText. RaTeXView calls ensureLoaded() on first use so fonts load
+// automatically from assets/fonts; optionally call loadFromAssets() at startup to load earlier.
 
 package io.ratex
 
@@ -37,7 +37,20 @@ object RaTeXFontLoader {
     private val cache = ConcurrentHashMap<String, Typeface>()
 
     /**
-     * Load KaTeX fonts from app assets. Call once at startup (e.g. in Application or MainActivity).
+     * Ensure KaTeX fonts are loaded; if not, load from [assetPath]. Call this on first use
+     * if you did not call [loadFromAssets] at startup. No-op if already loaded.
+     * @param assetPath Path under assets, e.g. "fonts" for assets/fonts/KaTeX_*.ttf
+     * @return Number of fonts loaded (0 if already loaded)
+     */
+    @JvmStatic
+    fun ensureLoaded(context: Context, assetPath: String = "fonts"): Int {
+        if (cache.isNotEmpty()) return 0
+        return loadFromAssets(context, assetPath)
+    }
+
+    /**
+     * Load KaTeX fonts from app assets. Optional: call once at startup to load early;
+     * otherwise [RaTeXView] will load on first use via [ensureLoaded].
      * @param assetPath Path under assets, e.g. "fonts" for assets/fonts/KaTeX_*.ttf
      * @return Number of fonts successfully loaded
      */

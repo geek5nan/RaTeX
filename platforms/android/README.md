@@ -3,6 +3,16 @@
 Native LaTeX math on Android (Kotlin + Canvas). AAR includes KaTeX fonts.  
 minSdk 21, targetSdk 34.
 
+## Out of the box
+
+1. **Add dependency** — In your app's `build.gradle`: `implementation("io.github.erweixin:ratex-android:0.0.3")` (or from Maven Central / local publish).
+2. **Use** — Add `RaTeXView` in your layout and set LaTeX in code; fonts load automatically from `assets/fonts/` on first render.
+   ```kotlin
+   binding.mathView.latex = """\frac{-b \pm \sqrt{b^2-4ac}}{2a}"""
+   binding.mathView.fontSize = 24f * resources.displayMetrics.scaledDensity
+   ```
+   **Optional:** To preload fonts at startup, call `RaTeXFontLoader.loadFromAssets(context, "fonts")` in your Application or first screen.
+
 ## Prerequisites
 
 NDK 26+, Rust + `cargo install cargo-ndk`, and targets:  
@@ -20,8 +30,7 @@ From repo root: `bash platforms/android/build-android.sh`
 
 ## Fonts
 
-AAR has KaTeX in `assets/fonts/`. Once at startup:  
-`RaTeXFontLoader.loadFromAssets(context, "fonts")`
+AAR has KaTeX in `assets/fonts/`. **RaTeXView** loads them automatically on first use. Optional: call `RaTeXFontLoader.loadFromAssets(context, "fonts")` at startup to load earlier.
 
 ## Usage
 

@@ -10,7 +10,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import io.ratex.RaTeXException
-import io.ratex.RaTeXFontLoader
 import io.ratex.RaTeXView
 
 class MainActivity : AppCompatActivity() {
@@ -31,7 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        RaTeXFontLoader.loadFromAssets(this, "fonts")
+        // 字体由 RaTeXView 首次渲染时通过 ensureLoaded() 从 assets/fonts 自动加载，无需在此手动调用
         setContentView(R.layout.activity_main)
 
         val density = resources.displayMetrics.scaledDensity

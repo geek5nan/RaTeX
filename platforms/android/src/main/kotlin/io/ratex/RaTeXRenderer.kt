@@ -12,9 +12,9 @@ import android.graphics.Typeface
  *
  * All em-unit coordinates are multiplied by [fontSize] (sp/px) to get screen coordinates.
  *
- * GlyphPath items are **placeholder rectangles** from Rust; glyphs must be drawn with
- * KaTeX fonts. Pass [typefaceLoader] (e.g. [RaTeXFontLoader.getTypeface]) after loading
- * fonts with [RaTeXFontLoader.loadFromAssets]. If null, glyphs are drawn as black rectangles.
+ * GlyphPath items are **placeholder rectangles** from Rust; glyphs are drawn with
+ * KaTeX fonts. [RaTeXView] calls [RaTeXFontLoader.ensureLoaded] on first use. Pass
+ * [typefaceLoader] (e.g. [RaTeXFontLoader.getTypeface]). If null, glyphs are drawn as black rectangles.
  *
  * @param displayList   The layout output from [RaTeXEngine.parse].
  * @param fontSize      Font size in pixels. Matches the desired display size on screen.

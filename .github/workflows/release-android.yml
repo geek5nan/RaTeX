@@ -1,4 +1,5 @@
-# 推送版本 tag（如 v0.0.4）时：构建 AAR、上传到 Sonatype Staging、自动 Close & Release 到 Maven Central、创建 GitHub Release 并附带 AAR。
+# 推送版本 tag（如 v0.0.4）时：构建 AAR、上传到 Maven Central、创建 GitHub Release 并附带 AAR。
+# 使用 com.vanniktech.maven.publish 插件简化发布流程。
 #
 # 仓库 Secrets：SONATYPE_NEXUS_USERNAME, SONATYPE_NEXUS_PASSWORD, GPG_PRIVATE_KEY, GPG_PASSPHRASE
 name: Release Android (Maven Central)
@@ -32,20 +33,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-          server-id: sonatype
-          server-username: SONATYPE_NEXUS_USERNAME
-          server-password: SONATYPE_NEXUS_PASSWORD
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: GPG_PASSPHRASE
-        env:
-          SONATYPE_NEXUS_USERNAME: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
-          SONATYPE_NEXUS_PASSWORD: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          # 与 build-android.sh 中的目标一致（无 i686）
           targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
 
       - name: Cache Rust
@@ -65,25 +56,17 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
 
-      - name: Prepare Gradle properties
-        run: |
-          KEY_ID=$(gpg --list-secret-keys --keyid-format SHORT --with-colons | grep '^sec' | head -1 | cut -d: -f5)
-          cd demo/android
-          echo "libraryVersion=${{ steps.version.outputs.version }}" >> gradle.properties
-          echo "SONATYPE_NEXUS_USERNAME=${{ secrets.SONATYPE_NEXUS_USERNAME }}" >> gradle.properties
-          echo "SONATYPE_NEXUS_PASSWORD=${{ secrets.SONATYPE_NEXUS_PASSWORD }}" >> gradle.properties
-          echo "signing.gnupg.keyName=$KEY_ID" >> gradle.properties
-          echo "signing.gnupg.passphrase=${{ secrets.GPG_PASSPHRASE }}" >> gradle.properties
-
-      - name: Build AAR
+      - name: Publish to Maven Central
+        # Central Portal 验证较慢，build service 轮询可能超时，但包已上传并触发 release，不影响实际发布
+        continue-on-error: true
         run: |
           cd demo/android
-          ./gradlew :ratex-android:assembleRelease --no-daemon
-
-      - name: Publish to Maven Central (staging + close & release)
-        run: |
-          cd demo/android
-          ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository --no-daemon
+          ./gradlew :ratex-android:publishAndReleaseToMavenCentral --no-daemon -PlibraryVersion=${{ steps.version.outputs.version }}
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Upload AAR artifact
         uses: actions/upload-artifact@v4

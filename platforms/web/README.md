@@ -2,11 +2,26 @@
 
 Use RaTeX in the browser: Rust compiled to WASM handles parsing and layout; TypeScript **web-render** draws on Canvas 2D from the DisplayList.
 
+> **Note:** For web projects we recommend using [KaTeX](https://katex.org/) directly — it is the mature, optimized choice for browser math rendering. This WASM build is **not intended as the best solution** for production web; it exists mainly for **cross-platform comparison and testing** (same RaTeX engine as iOS/Android, different render path).
+
 ## Architecture
 
 - **ratex-wasm** (`crates/ratex-wasm`): Rust → WASM, exports `renderLatex(latex: string) => string` returning DisplayList JSON.
 - **web-render** (`src/renderer.ts`): Renders the DisplayList to Canvas 2D (Line / Rect / Path / GlyphPath). **GlyphPath** is currently a placeholder rectangle in layout; the browser draws characters via Canvas `fillText` and a math font using `char_code`, so the page must load a math font (e.g. KaTeX CSS or Latin Modern Math).
 - **Entry** (`src/index.ts`): Initializes WASM and provides `renderLatexToCanvas(latex, canvas, options)` for one-step rendering.
+
+## Out of the box
+
+No build required — use the published npm package:
+
+1. **Install** — `npm install ratex-wasm` (or `yarn add ratex-wasm`).
+2. **In your page** — Load fonts and register the web component, then use the custom element:
+   ```html
+   <link rel="stylesheet" href="node_modules/ratex-wasm/fonts.css" />
+   <script type="module" src="node_modules/ratex-wasm/dist/ratex-formula.js"></script>
+   <ratex-formula latex="\frac{-b \pm \sqrt{b^2-4ac}}{2a}" font-size="48"></ratex-formula>
+   ```
+3. Supported attributes: `latex`, `font-size`, `padding`, `background-color`; you can also set `element.latex = '...'` via JS.
 
 ## Build
 

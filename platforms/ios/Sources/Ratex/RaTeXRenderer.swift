@@ -4,7 +4,7 @@
 // not real glyph outlines. Glyphs must be drawn with CTFont using font + char_code.
 // Non-glyph items (Line, Rect, Path) use their commands directly.
 //
-// Fonts must be registered before use — call RaTeXFontLoader.loadFromBundle() at startup.
+// Fonts are registered automatically on first use via RaTeXFontLoader.ensureLoaded(); or call loadFromBundle() at startup.
 
 import CoreGraphics
 import CoreText
