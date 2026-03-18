@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useCallback} from 'react';
 import type {StyleProp, ViewStyle} from 'react-native';
 import RaTeXViewNativeComponent from './RaTeXViewNativeComponent';
 
@@ -7,6 +7,10 @@ export interface RaTeXViewProps {
   fontSize?: number;
   style?: StyleProp<ViewStyle>;
   onError?: (e: {nativeEvent: {error: string}}) => void;
+  /** Called when content size is measured (e.g. for scroll layout). */
+  onContentSizeChange?: (e: {
+    nativeEvent: {width: number; height: number};
+  }) => void;
 }
 
 export function RaTeXView({
@@ -14,13 +18,35 @@ export function RaTeXView({
   fontSize = 24,
   style,
   onError,
+  onContentSizeChange,
 }: RaTeXViewProps): React.JSX.Element {
+  const [contentSize, setContentSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+
+  const handleContentSizeChange = useCallback(
+    (e: {nativeEvent: {width: number; height: number}}) => {
+      setContentSize({
+        width: e.nativeEvent.width,
+        height: e.nativeEvent.height,
+      });
+      onContentSizeChange?.(e);
+    },
+    [onContentSizeChange],
+  );
+
+  const resolvedStyle = contentSize
+    ? [style, {width: contentSize.width, height: contentSize.height}]
+    : style;
+
   return (
     <RaTeXViewNativeComponent
       latex={latex}
       fontSize={fontSize}
-      style={style}
+      style={resolvedStyle}
       onError={onError}
+      onContentSizeChange={handleContentSizeChange}
     />
   );
 }

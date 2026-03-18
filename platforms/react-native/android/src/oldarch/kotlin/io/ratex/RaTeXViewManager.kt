@@ -27,6 +27,14 @@ class RaTeXViewManager(private val reactContext: ReactApplicationContext) :
             ctx.getJSModule(RCTEventEmitter::class.java)
                 .receiveEvent(view.id, "topError", event)
         }
+        view.onContentSizeChange = { width, height ->
+            val event = WritableNativeMap().apply {
+                putDouble("width", width)
+                putDouble("height", height)
+            }
+            ctx.getJSModule(RCTEventEmitter::class.java)
+                .receiveEvent(view.id, "topContentSizeChange", event)
+        }
         return view
     }
 
@@ -46,6 +54,12 @@ class RaTeXViewManager(private val reactContext: ReactApplicationContext) :
                 "phasedRegistrationNames" to mapOf(
                     "bubbled" to "onError",
                     "captured" to "onErrorCapture",
+                )
+            ),
+            "topContentSizeChange" to mapOf(
+                "phasedRegistrationNames" to mapOf(
+                    "bubbled" to "onContentSizeChange",
+                    "captured" to "onContentSizeChangeCapture",
                 )
             )
         )

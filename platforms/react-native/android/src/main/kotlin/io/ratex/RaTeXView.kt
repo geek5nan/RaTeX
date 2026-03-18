@@ -59,6 +59,9 @@ class RaTeXView @JvmOverloads constructor(
     /** Called on the main thread when a render error occurs. */
     var onError: ((RaTeXException) -> Unit)? = null
 
+    /** Called on the main thread when content size is known (width/height in dp). */
+    var onContentSizeChange: ((width: Double, height: Double) -> Unit)? = null
+
     // MARK: - Private state
 
     private var renderer: RaTeXRenderer? = null
@@ -104,9 +107,14 @@ class RaTeXView @JvmOverloads constructor(
             try {
                 withContext(Dispatchers.IO) { RaTeXFontLoader.ensureLoaded(context) }
                 val dl = RaTeXEngine.parse(latex)
-                renderer = RaTeXRenderer(dl, fontSize) { RaTeXFontLoader.getTypeface(it) }
+                val r = RaTeXRenderer(dl, fontSize) { RaTeXFontLoader.getTypeface(it) }
+                renderer = r
                 requestLayout()
                 invalidate()
+                val density = context.resources.displayMetrics.density
+                val widthDp = r.widthPx / density
+                val heightDp = r.totalHeightPx / density
+                onContentSizeChange?.invoke(widthDp.toDouble(), heightDp.toDouble())
             } catch (e: RaTeXException) {
                 renderer = null
                 requestLayout(); invalidate()

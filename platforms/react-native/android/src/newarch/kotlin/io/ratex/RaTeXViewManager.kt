@@ -35,6 +35,13 @@ class RaTeXViewManager(private val reactContext: ReactApplicationContext) :
                 RaTeXErrorEvent(surfaceId, view.id, exception.message ?: "unknown error")
             )
         }
+        view.onContentSizeChange = { width, height ->
+            val dispatcher = UIManagerHelper.getEventDispatcherForReactTag(ctx, view.id)
+            val surfaceId = UIManagerHelper.getSurfaceId(ctx)
+            dispatcher?.dispatchEvent(
+                RaTeXContentSizeEvent(surfaceId, view.id, width, height)
+            )
+        }
         return view
     }
 

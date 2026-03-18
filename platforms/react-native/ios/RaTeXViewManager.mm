@@ -60,6 +60,17 @@ using namespace facebook::react;
         emitter->onError(event);
       }
     }];
+    [_nativeView setContentSizeCallback:^(CGFloat width, CGFloat height) {
+      RaTeXViewComponentView *strongSelf = weakSelf;
+      if (!strongSelf || !strongSelf->_eventEmitter) return;
+      auto emitter = std::dynamic_pointer_cast<const RaTeXViewEventEmitter>(
+          strongSelf->_eventEmitter);
+      if (emitter) {
+        RaTeXViewEventEmitter::OnContentSizeChange event{
+            .width = static_cast<Float>(width), .height = static_cast<Float>(height)};
+        emitter->onContentSizeChange(event);
+      }
+    }];
 
     self.contentView = _nativeView;
   }
@@ -109,6 +120,7 @@ RCT_EXPORT_MODULE(RaTeXView)
 RCT_EXPORT_VIEW_PROPERTY(latex, NSString)
 RCT_EXPORT_VIEW_PROPERTY(fontSize, CGFloat)
 RCT_EXPORT_VIEW_PROPERTY(onError, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onContentSizeChange, RCTDirectEventBlock)
 
 @end
 

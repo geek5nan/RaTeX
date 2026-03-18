@@ -58,7 +58,7 @@ export default function App() {
           <RaTeXView
             latex={custom}
             fontSize={fontSize}
-            style={[styles.formula, {height: Math.ceil(fontSize * 3.5)}]}
+            style={styles.formula}
             onError={e => setError(e.nativeEvent.error)}
           />
         </View>
@@ -67,7 +67,7 @@ export default function App() {
         {FORMULAS.map(({name, latex}) => (
           <View key={name} style={styles.card}>
             <Text style={[styles.label, isDark && styles.textLight]}>{name}</Text>
-            <RaTeXView latex={latex} fontSize={24} style={[styles.formula, {height: 90}]} />
+            <RaTeXView latex={latex} fontSize={24} style={[styles.formula]} />
           </View>
         ))}
       </ScrollView>

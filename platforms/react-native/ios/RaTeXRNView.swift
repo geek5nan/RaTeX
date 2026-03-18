@@ -44,6 +44,18 @@ public class RaTeXRNView: UIView {
         innerView.onError = { error in handler(error.localizedDescription) }
     }
 
+    /// Old-arch: set by RN via KVC. Called with @{ @"width": @(w), @"height": @(h) }.
+    @objc public var onContentSizeChange: ((NSDictionary?) -> Void)?
+
+    /// New-arch: set by ComponentView to dispatch content size events.
+    @objc public func setContentSizeCallback(_ handler: ((CGFloat, CGFloat) -> Void)?) {
+        contentSizeCallback = handler
+    }
+    private var contentSizeCallback: ((CGFloat, CGFloat) -> Void)?
+
+    /// Last size we reported to avoid duplicate events.
+    private var lastReportedContentSize: CGSize = .zero
+
     // MARK: - Init
 
     public override init(frame: CGRect) {
@@ -60,6 +72,16 @@ public class RaTeXRNView: UIView {
 
     public override var intrinsicContentSize: CGSize {
         innerView.intrinsicContentSize
+    }
+
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        let size = innerView.intrinsicContentSize
+        guard size.width > 0, size.height > 0 else { return }
+        guard size != lastReportedContentSize else { return }
+        lastReportedContentSize = size
+        contentSizeCallback?(size.width, size.height)
+        onContentSizeChange?(["width": size.width, "height": size.height])
     }
 
     // MARK: - Private
