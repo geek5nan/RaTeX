@@ -32,9 +32,10 @@ public struct RaTeXRenderer {
     /// Draw the formula into `context`.
     /// The origin is the top-left of the formula's bounding box.
     public func draw(in context: CGContext) {
+        var fontCache: [String: CTFont] = [:]
         for item in displayList.items {
             switch item {
-            case .glyphPath(let g): drawGlyph(g, in: context)
+            case .glyphPath(let g): drawGlyph(g, in: context, fontCache: &fontCache)
             case .line(let l):      drawLine(l, in: context)
             case .rect(let r):      drawRect(r, in: context)
             case .path(let p):      drawPath(p, in: context)
@@ -59,14 +60,22 @@ public struct RaTeXRenderer {
         "KaTeX_\(fontId)"
     }
 
-    private func drawGlyph(_ g: GlyphPathData, in ctx: CGContext) {
+    private func drawGlyph(_ g: GlyphPathData, in ctx: CGContext, fontCache: inout [String: CTFont]) {
         // GlyphPath.commands are placeholder rects — ignore them.
         // Draw the actual character using CoreText.
         guard let scalar = Unicode.Scalar(g.charCode) else { return }
         let char = String(Character(scalar))
 
         let psName  = postScriptName(for: g.font)
-        let ctFont  = CTFontCreateWithName(psName as CFString, pt(g.scale), nil)
+        let cacheKey = "\(psName)/\(g.scale)"
+        let ctFont: CTFont
+        if let cached = fontCache[cacheKey] {
+            ctFont = cached
+        } else {
+            let f = CTFontCreateWithName(psName as CFString, pt(g.scale), nil)
+            fontCache[cacheKey] = f
+            ctFont = f
+        }
         let color   = cgColor(g.color)
 
         let attrs: [CFString: Any] = [

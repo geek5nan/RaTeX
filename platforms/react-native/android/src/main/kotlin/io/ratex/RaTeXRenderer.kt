@@ -73,7 +73,7 @@ class RaTeXRenderer(
     }
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isAntiAlias = true }
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     private fun drawGlyph(canvas: Canvas, g: DisplayItem.GlyphPath) {
         val typeface = typefaceLoader?.invoke(g.font) ?: return

@@ -74,6 +74,8 @@ public class RaTeXRNView: UIView {
         return module
     }()
 
+    private static var fontsLoaded = false
+
     private func setup() {
         backgroundColor = .clear
         addSubview(innerView)
@@ -85,6 +87,10 @@ public class RaTeXRNView: UIView {
             innerView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
         // Load fonts from the CocoaPods resource bundle (not the main bundle or SPM bundle).
-        RaTeXFontLoader.loadFromBundle(RaTeXRNView.fontsBundle)
+        // Guard ensures we only do this once across all RaTeXRNView instances.
+        if !RaTeXRNView.fontsLoaded {
+            RaTeXFontLoader.loadFromBundle(RaTeXRNView.fontsBundle)
+            RaTeXRNView.fontsLoaded = true
+        }
     }
 }

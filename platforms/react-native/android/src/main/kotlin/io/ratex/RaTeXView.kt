@@ -9,7 +9,7 @@ import android.view.View
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -62,7 +62,7 @@ class RaTeXView @JvmOverloads constructor(
     // MARK: - Private state
 
     private var renderer: RaTeXRenderer? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var renderJob: Job? = null
 
     // MARK: - Measure
@@ -86,7 +86,8 @@ class RaTeXView @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        scope.cancel()
+        renderJob?.cancel()
+        renderJob = null
     }
 
     // MARK: - Private
@@ -104,17 +105,15 @@ class RaTeXView @JvmOverloads constructor(
                 withContext(Dispatchers.IO) { RaTeXFontLoader.ensureLoaded(context) }
                 val dl = RaTeXEngine.parse(latex)
                 renderer = RaTeXRenderer(dl, fontSize) { RaTeXFontLoader.getTypeface(it) }
-                post {
-                    requestLayout()
-                    invalidate()
-                }
+                requestLayout()
+                invalidate()
             } catch (e: RaTeXException) {
                 renderer = null
-                post { requestLayout(); invalidate() }
+                requestLayout(); invalidate()
                 onError?.invoke(e)
             } catch (e: Throwable) {
                 renderer = null
-                post { requestLayout(); invalidate() }
+                requestLayout(); invalidate()
                 onError?.invoke(RaTeXException(e.message ?: "unknown error"))
             }
         }
