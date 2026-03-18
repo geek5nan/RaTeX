@@ -17,7 +17,7 @@ import android.graphics.Typeface
  * [typefaceLoader] (e.g. [RaTeXFontLoader.getTypeface]). If null, glyphs are drawn as black rectangles.
  *
  * @param displayList   The layout output from [RaTeXEngine.parse].
- * @param fontSize      Font size in pixels. Matches the desired display size on screen.
+ * @param fontSize      Font size in screen pixels (use dp * density when coming from RN/dp).
  * @param typefaceLoader Optional (fontId: String) -> Typeface? for glyph rendering.
  */
 class RaTeXRenderer(

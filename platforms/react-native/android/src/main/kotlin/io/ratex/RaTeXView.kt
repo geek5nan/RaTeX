@@ -48,7 +48,10 @@ class RaTeXView @JvmOverloads constructor(
             rerender()
         }
 
-    /** Font size in pixels. Setting this triggers an async re-render. */
+    /**
+     * Font size in density-independent units (dp), matching React Native / iOS points.
+     * Setting this triggers an async re-render.
+     */
     var fontSize: Float = 24f
         set(value) {
             if (field == value) return
@@ -107,11 +110,13 @@ class RaTeXView @JvmOverloads constructor(
             try {
                 withContext(Dispatchers.IO) { RaTeXFontLoader.ensureLoaded(context) }
                 val dl = RaTeXEngine.parse(latex)
-                val r = RaTeXRenderer(dl, fontSize) { RaTeXFontLoader.getTypeface(it) }
+                // RN passes logical size (dp); convert to px so physical size matches iOS points.
+                val density = context.resources.displayMetrics.density
+                val fontSizePx = fontSize * density
+                val r = RaTeXRenderer(dl, fontSizePx) { RaTeXFontLoader.getTypeface(it) }
                 renderer = r
                 requestLayout()
                 invalidate()
-                val density = context.resources.displayMetrics.density
                 val widthDp = r.widthPx / density
                 val heightDp = r.totalHeightPx / density
                 onContentSizeChange?.invoke(widthDp.toDouble(), heightDp.toDouble())
