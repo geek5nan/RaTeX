@@ -76,27 +76,16 @@ class RaTeXRenderer(
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isAntiAlias = true }
 
     private fun drawGlyph(canvas: Canvas, g: DisplayItem.GlyphPath) {
+        val typeface = typefaceLoader?.invoke(g.font) ?: return
         canvas.save()
         canvas.translate(g.x.em(), g.y.em())
-        val typeface = typefaceLoader?.invoke(g.font)
-        if (typeface != null) {
-            // Draw actual character with KaTeX font (like iOS CoreText). Ignore placeholder path.
-            val codePoint = g.charCode.toInt()
-            val str = if (Character.isValidCodePoint(codePoint)) String(Character.toChars(codePoint)) else "?"
-            textPaint.typeface = typeface
-            textPaint.textSize = fontSize * g.scale.toFloat()
-            textPaint.color = g.color.toArgb()
-            textPaint.style = Paint.Style.FILL
-            // Canvas Y increases down; glyph y is baseline. drawText baseline is the y we pass.
-            canvas.drawText(str, 0f, 0f, textPaint)
-        } else {
-            // No font loaded — draw placeholder rectangle
-            canvas.scale(g.scale.toFloat(), g.scale.toFloat())
-            val path = buildAndroidPath(g.commands)
-            paint.style = Paint.Style.FILL
-            paint.applyColor(g.color)
-            canvas.drawPath(path, paint)
-        }
+        val codePoint = g.charCode.toInt()
+        val str = if (Character.isValidCodePoint(codePoint)) String(Character.toChars(codePoint)) else "?"
+        textPaint.typeface = typeface
+        textPaint.textSize = fontSize * g.scale.toFloat()
+        textPaint.color = g.color.toArgb()
+        textPaint.style = Paint.Style.FILL
+        canvas.drawText(str, 0f, 0f, textPaint)
         canvas.restore()
     }
 

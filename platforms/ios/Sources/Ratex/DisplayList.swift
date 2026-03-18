@@ -63,6 +63,8 @@ public struct GlyphPathData: Codable {
     public let scale: Double
     public let font: String
     public let charCode: UInt32
+    /// Placeholder bounding-box paths from layout. Omitted in current serialized output;
+    /// decoded as empty array when absent for forward compatibility.
     public let commands: [PathCommand]
     public let color: RaTeXColor
 
@@ -70,6 +72,17 @@ public struct GlyphPathData: Codable {
         case x, y, scale, font
         case charCode = "char_code"
         case commands, color
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        x        = try c.decode(Double.self, forKey: .x)
+        y        = try c.decode(Double.self, forKey: .y)
+        scale    = try c.decode(Double.self, forKey: .scale)
+        font     = try c.decode(String.self, forKey: .font)
+        charCode = try c.decode(UInt32.self, forKey: .charCode)
+        commands = try c.decodeIfPresent([PathCommand].self, forKey: .commands) ?? []
+        color    = try c.decode(RaTeXColor.self, forKey: .color)
     }
 }
 

@@ -25,7 +25,8 @@ export type DisplayItem =
       scale: number;
       font: string;
       char_code: number;
-      commands: PathCommand[];
+      /** Placeholder bounding-box paths; omitted in serialized output since v0.0.11. */
+      commands?: PathCommand[];
       color: Color;
     }
   | {

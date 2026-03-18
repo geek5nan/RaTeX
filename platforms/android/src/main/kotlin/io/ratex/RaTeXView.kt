@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * A custom [View] that renders a LaTeX math formula using the RaTeX engine.
@@ -100,7 +101,7 @@ class RaTeXView @JvmOverloads constructor(
         }
         renderJob = scope.launch {
             try {
-                RaTeXFontLoader.ensureLoaded(context)
+                withContext(Dispatchers.IO) { RaTeXFontLoader.ensureLoaded(context) }
                 val dl = RaTeXEngine.parse(latex)
                 renderer = RaTeXRenderer(dl, fontSize) { RaTeXFontLoader.getTypeface(it) }
                 post {

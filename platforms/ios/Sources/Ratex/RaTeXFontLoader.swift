@@ -11,6 +11,9 @@ import Foundation
 
 public enum RaTeXFontLoader {
 
+    private static let loadLock = NSLock()
+    private static var _didEnsureLoad = false
+
     /// All KaTeX font filenames (without extension) that the renderer may request.
     static let fontFileNames: [String] = [
         "KaTeX_AMS-Regular",
@@ -87,20 +90,37 @@ public enum RaTeXFontLoader {
         return loaded
     }
 
-    private static var didEnsureLoad = false
-
     /// Ensure KaTeX fonts are loaded. If none are registered, loads from the package bundle
-    /// (SPM) or main bundle. Call is optional — views also call this on first render.
+    /// (SPM) or main bundle. Thread-safe; subsequent calls are no-ops.
     @discardableResult
     public static func ensureLoaded() -> Int {
-        if didEnsureLoad { return 0 }
-        didEnsureLoad = true
+        guard !_didEnsureLoad else { return 0 }
+        loadLock.lock()
+        defer { loadLock.unlock() }
+        guard !_didEnsureLoad else { return 0 }
+        defer { _didEnsureLoad = true }
         if isFontRegistered("KaTeX_Main-Regular") { return 0 }
 #if SWIFT_PACKAGE
         let n = loadFromPackageBundle()
         if n > 0 { return n }
 #endif
         return loadFromBundle()
+    }
+
+    /// Pre-load KaTeX fonts on a background thread. Call this once at app startup
+    /// (e.g. in `App.init` or `AppDelegate.application(_:didFinishLaunchingWithOptions:)`)
+    /// so fonts are ready before the first formula is displayed.
+    ///
+    /// ```swift
+    /// Task { await RaTeXFontLoader.preload() }
+    /// ```
+    @discardableResult
+    public static func preload() async -> Int {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: ensureLoaded())
+            }
+        }
     }
 
     /// Check whether a specific KaTeX font is already registered.

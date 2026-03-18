@@ -39,7 +39,6 @@ export class RatexFormulaElement extends HTMLElement {
     return ["latex", "font-size", "padding", "background-color"];
   }
 
-  private _initDone = false;
   private _canvas: HTMLCanvasElement | null = null;
 
   connectedCallback(): void {
@@ -50,6 +49,8 @@ export class RatexFormulaElement extends HTMLElement {
       this._canvas = canvas;
       root.appendChild(canvas);
     }
+    // Pre-warm WASM as early as possible so it's ready by the time _renderWhenReady needs it.
+    initRatex().catch(() => {});
     this._renderWhenReady();
   }
 
@@ -110,10 +111,7 @@ export class RatexFormulaElement extends HTMLElement {
       return;
     }
     try {
-      if (!this._initDone) {
-        await initRatex();
-        this._initDone = true;
-      }
+      await initRatex();
       const opts = this._getOptions();
       const em = opts.fontSize ?? DEFAULT_EM;
       const pad = opts.padding ?? DEFAULT_PAD;

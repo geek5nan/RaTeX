@@ -104,18 +104,12 @@ function drawItem(
     case "GlyphPath": {
       // Layout emits placeholder rectangle paths; browser has no font outline data.
       // Use item.font (FontId string from Rust) to select the exact KaTeX variant.
-      const px = item.x * em;
-      const py = item.y * em;
-      const fontSizePx = item.scale * em;
-      const char = String.fromCodePoint(item.char_code);
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.font = fontIdToCss(item.font, fontSizePx);
+      // No save/restore needed: fillText uses absolute coords and doesn't modify the CTM.
+      ctx.font = fontIdToCss(item.font, item.scale * em);
       ctx.textBaseline = "alphabetic";
       ctx.textAlign = "left";
       ctx.fillStyle = colorToCss(item.color);
-      ctx.fillText(char, 0, 0);
-      ctx.restore();
+      ctx.fillText(String.fromCodePoint(item.char_code), item.x * em, item.y * em);
       break;
     }
     case "Line": {

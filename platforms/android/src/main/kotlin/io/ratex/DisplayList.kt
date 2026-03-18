@@ -29,7 +29,7 @@ sealed class DisplayItem {
         val scale: Double,
         val font: String,
         @SerialName("char_code") val charCode: Int,
-        val commands: List<PathCommand>,
+        val commands: List<PathCommand> = emptyList(),
         val color: RaTeXColor,
     ) : DisplayItem()
 

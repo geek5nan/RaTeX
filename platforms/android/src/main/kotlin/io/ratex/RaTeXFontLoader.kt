@@ -9,8 +9,12 @@ package io.ratex
 import android.content.Context
 import android.graphics.Typeface
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 object RaTeXFontLoader {
+
+    private val fontsLoaded = AtomicBoolean(false)
+    private val loadLock = Any()
 
     /** KaTeX font IDs (Rust FontId.as_str()) → TTF filename without path. */
     private val fontFileNames = listOf(
@@ -44,8 +48,11 @@ object RaTeXFontLoader {
      */
     @JvmStatic
     fun ensureLoaded(context: Context, assetPath: String = "fonts"): Int {
-        if (cache.isNotEmpty()) return 0
-        return loadFromAssets(context, assetPath)
+        if (fontsLoaded.get()) return 0
+        synchronized(loadLock) {
+            if (fontsLoaded.get()) return 0
+            return loadFromAssets(context, assetPath).also { fontsLoaded.set(true) }
+        }
     }
 
     /**
@@ -80,5 +87,8 @@ object RaTeXFontLoader {
 
     /** Clear cache (e.g. for tests). */
     @JvmStatic
-    fun clear() = cache.clear()
+    fun clear() {
+        cache.clear()
+        fontsLoaded.set(false)
+    }
 }

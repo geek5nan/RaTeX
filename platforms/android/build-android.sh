@@ -22,18 +22,27 @@ abi_for() {
     esac
 }
 
-echo "==> Building ratex-ffi for Android targets..."
+echo "==> Building ratex-ffi for Android targets (parallel)..."
+PIDS=()
 for RUST_TARGET in aarch64-linux-android armv7-linux-androideabi x86_64-linux-android; do
     ABI="$(abi_for "$RUST_TARGET")"
-    echo "    → $RUST_TARGET ($ABI)"
-    cargo ndk \
-        --target "$RUST_TARGET" \
-        --manifest-path "$REPO_ROOT/Cargo.toml" \
-        build --release -p ratex-ffi
+    echo "    → $RUST_TARGET ($ABI) [starting]"
+    (
+        cargo ndk \
+            --target "$RUST_TARGET" \
+            --manifest-path "$REPO_ROOT/Cargo.toml" \
+            build --release -p ratex-ffi
 
-    DEST="$JNILIBS/$ABI"
-    mkdir -p "$DEST"
-    cp "$REPO_ROOT/target/$RUST_TARGET/release/libratex_ffi.so" "$DEST/"
+        DEST="$JNILIBS/$ABI"
+        mkdir -p "$DEST"
+        cp "$REPO_ROOT/target/$RUST_TARGET/release/libratex_ffi.so" "$DEST/"
+        echo "    ✓ $RUST_TARGET done"
+    ) &
+    PIDS+=($!)
+done
+
+for PID in "${PIDS[@]}"; do
+    wait "$PID" || { echo "==> Build failed!"; exit 1; }
 done
 
 echo "==> Done. Libraries copied to $JNILIBS"

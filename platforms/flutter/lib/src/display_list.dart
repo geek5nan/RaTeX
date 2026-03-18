@@ -64,7 +64,10 @@ class GlyphPathItem extends DisplayItem {
         scale: (j['scale'] as num).toDouble(),
         font: j['font'] as String,
         charCode: j['char_code'] as int,
-        commands: (j['commands'] as List).map((e) => PathCommand.fromJson(e as Map<String, dynamic>)).toList(),
+        commands: (j['commands'] as List?)
+                ?.map((e) => PathCommand.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [],
         color: RaTeXColor.fromJson(j['color'] as Map<String, dynamic>),
       );
 }

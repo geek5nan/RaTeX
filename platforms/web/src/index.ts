@@ -12,13 +12,21 @@ import type { DisplayList } from "./types.js";
 import type { WebRenderOptions } from "./renderer.js";
 
 let wasmModule: { renderLatex: (latex: string) => string } | null = null;
+let _initPromise: Promise<void> | null = null;
 
 /**
- * Initialize the WASM module. Call once before using renderLatex or renderLatexToCanvas.
+ * Initialize the WASM module. Safe to call concurrently — subsequent calls share
+ * the same in-flight promise so WASM is loaded at most once.
  * Pass the URL to the WASM package's init (e.g. from your bundler or script tag).
  */
-export async function initRatex(init?: () => Promise<{ renderLatex: (s: string) => string }>): Promise<void> {
-  if (wasmModule) return;
+export function initRatex(init?: () => Promise<{ renderLatex: (s: string) => string }>): Promise<void> {
+  if (wasmModule) return Promise.resolve();
+  if (_initPromise) return _initPromise;
+  _initPromise = _doInit(init);
+  return _initPromise;
+}
+
+async function _doInit(init?: () => Promise<{ renderLatex: (s: string) => string }>): Promise<void> {
   if (init) {
     wasmModule = await init();
     return;
