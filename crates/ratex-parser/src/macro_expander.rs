@@ -277,7 +277,7 @@ impl<'a> MacroExpander<'a> {
             ("\\rBrace", "\\rbrace"),
             ("\\llbracket", "\\lbrack\\lbrack"),
             ("\\rrbracket", "\\rbrack\\rbrack"),
-            ("\\copyright", "\\text{\u{00A9}}"),
+            ("\\copyright", "\\textcircled{c}"),
             ("\\textregistered", "\u{00AE}"),
 
             // ── dddot / ddddot ──
