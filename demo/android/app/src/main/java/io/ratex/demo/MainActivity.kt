@@ -24,70 +24,90 @@ class MainActivity : AppCompatActivity() {
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    // ── 独立公式示例 ──────────────────────────────────────────────────────────
+    // ── Showcase — first visible screen ──────────────────────────────────────
+
+    /** Inline sentences with $...$ math markers — multiple rows for the showcase. */
+    private val showcaseInlineRows = listOf(
+        "Einstein showed that mass and energy are \$E = mc^2$, where \$c$ is the speed of light.",
+        "A circle of radius \$r$ has area \$S = \\pi r^2$ and circumference \$C = 2\\pi r$.",
+        "The golden ratio \$\\varphi = \\frac{1+\\sqrt{5}}{2}$ satisfies \$\\varphi^2 = \\varphi + 1$.",
+        "If \$A = \\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$, then \$\\det A = ad - bc$.",
+    )
+
+    /** Block formulas for the showcase section: (label, LaTeX). */
+    private val showcaseBlocks = listOf(
+        "Fourier transform" to
+            """\hat{f}(\xi) = \int_{-\infty}^{\infty} f(x)\,e^{-2\pi i x \xi}\,dx""",
+        "3D rotation matrix" to
+            """R_z(\theta)=\begin{pmatrix}\cos\theta&-\sin\theta&0\\\sin\theta&\cos\theta&0\\0&0&1\end{pmatrix}""",
+        "Schrödinger equation" to
+            """i\hbar\frac{\partial}{\partial t}\Psi = \left[-\frac{\hbar^2}{2m}\nabla^2 + V\right]\Psi""",
+        """Residue theorem · \operatorname""" to
+            """\oint_C f(z)\,dz = 2\pi i \sum_k \operatorname{Res}(f,z_k)""",
+    )
+
+    // ── Preset block formulas ─────────────────────────────────────────────────
     private val formulas = listOf(
-        "二次方程" to """\frac{-b \pm \sqrt{b^2-4ac}}{2a}""",
-        "欧拉公式" to """e^{i\pi} + 1 = 0""",
-        "高斯积分" to """\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}""",
-        "巴塞尔级数" to """\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}""",
-        "矩阵" to """\begin{pmatrix}a & b \\ c & d\end{pmatrix}""",
-        "Maxwell 安培定律" to """\nabla \times \mathbf{B} = \mu_0\left(\mathbf{J} + \varepsilon_0\frac{\partial \mathbf{E}}{\partial t}\right)""",
-        "二项式定理" to """(x+y)^n = \sum_{k=0}^{n} \binom{n}{k} x^k y^{n-k}""",
-        "傅里叶变换" to """\hat{f}(\xi) = \int_{-\infty}^{\infty} f(x)\,e^{-2\pi i x \xi}\,dx""",
-        "薛定谔方程" to """i\hbar\frac{\partial}{\partial t}\Psi = \hat{H}\Psi""",
-        "爱因斯坦场方程" to """G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4}T_{\mu\nu}""",
-        "Gamma 函数" to """\Gamma(z) = \int_0^{\infty} t^{z-1}e^{-t}\,dt""",
-        "留数定理" to """\oint_C f(z)\,dz = 2\pi i \sum_k \operatorname{Res}(f,z_k)""",
-        "黎曼 Zeta 函数" to """\zeta(s) = \sum_{n=1}^{\infty}\frac{1}{n^s} = \prod_p \frac{1}{1-p^{-s}}""",
-        "Bessel 函数" to """J_n(x) = \frac{1}{\pi}\int_0^{\pi}\cos(n\tau - x\sin\tau)\,d\tau""",
-        "Stokes 定理" to """\oint_{\partial\Sigma}\mathbf{F}\cdot d\mathbf{r} = \iint_{\Sigma}(\nabla\times\mathbf{F})\cdot d\mathbf{S}""",
-        "拉普拉斯变换" to """\mathcal{L}\{f(t)\} = \int_0^{\infty} f(t)\,e^{-st}\,dt""",
+        "Quadratic formula"         to """\frac{-b \pm \sqrt{b^2-4ac}}{2a}""",
+        "Euler's identity"          to """e^{i\pi} + 1 = 0""",
+        "Gaussian integral"         to """\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}""",
+        "Basel problem"             to """\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}""",
+        "Matrix"                    to """\begin{pmatrix}a & b \\ c & d\end{pmatrix}""",
+        "Maxwell – Ampère's law"    to """\nabla \times \mathbf{B} = \mu_0\left(\mathbf{J} + \varepsilon_0\frac{\partial \mathbf{E}}{\partial t}\right)""",
+        "Binomial theorem"          to """(x+y)^n = \sum_{k=0}^{n} \binom{n}{k} x^k y^{n-k}""",
+        "Fourier transform"         to """\hat{f}(\xi) = \int_{-\infty}^{\infty} f(x)\,e^{-2\pi i x \xi}\,dx""",
+        "Schrödinger equation"      to """i\hbar\frac{\partial}{\partial t}\Psi = \hat{H}\Psi""",
+        "Einstein field equations"  to """G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4}T_{\mu\nu}""",
+        "Gamma function"            to """\Gamma(z) = \int_0^{\infty} t^{z-1}e^{-t}\,dt""",
+        "Residue theorem"           to """\oint_C f(z)\,dz = 2\pi i \sum_k \operatorname{Res}(f,z_k)""",
+        "Riemann zeta function"     to """\zeta(s) = \sum_{n=1}^{\infty}\frac{1}{n^s} = \prod_p \frac{1}{1-p^{-s}}""",
+        "Bessel function"           to """J_n(x) = \frac{1}{\pi}\int_0^{\pi}\cos(n\tau - x\sin\tau)\,d\tau""",
+        "Stokes' theorem"           to """\oint_{\partial\Sigma}\mathbf{F}\cdot d\mathbf{r} = \iint_{\Sigma}(\nabla\times\mathbf{F})\cdot d\mathbf{S}""",
+        "Laplace transform"         to """\mathcal{L}\{f(t)\} = \int_0^{\infty} f(t)\,e^{-st}\,dt""",
     )
 
-    // ── 行内混排：(前缀, LaTeX, 后缀)，公式作为 Span 嵌入 TextView 自然流排 ──
+    // ── Inline mix rows: (prefix, LaTeX, suffix) ──────────────────────────────
     private val inlineFormulas = listOf(
-        // 单行紧凑公式，前后均有文字
-        Triple("黄金比例 φ = ", """\frac{1+\sqrt{5}}{2}""", " ≈ 1.618，广泛存在于自然界与艺术之中。"),
-        Triple("由勾股定理 ", """a^2 + b^2 = c^2""", " 可直接求得直角三角形斜边长度。"),
-        Triple("当 x > 0 时，", """\frac{d}{dx}\ln x = \frac{1}{x}""", " 在整个正实轴上处处成立。"),
-        Triple("复数模长 |z| = ", """\sqrt{a^2+b^2}""", "，其中 z = a + bi 为复数的代数形式。"),
-        Triple("当 n→∞ 时，", """\left(1+\frac{1}{n}\right)^n""", " 收敛于自然常数 e ≈ 2.71828。"),
-        Triple("计算积分 ", """\int_0^{\pi}\sin x\,dx""", " = 2，这是一个基本的定积分结果。"),
-        Triple("展开 ", """\sum_{k=0}^{n}\binom{n}{k}x^k y^{n-k}""", " 即得完整的二项式定理。"),
-        // 高个公式（含分式/矩阵/积分），前后均有文字
-        Triple("重要极限：", """\lim_{x \to 0} \frac{\sin x}{x}""", " = 1，是三角函数极限的基础结论。"),
-        Triple("令换元 t = ", """\frac{x-\mu}{\sigma}""", "，可将一般正态积分化为标准正态形式。"),
-        Triple("行列式 det(A) = ", """\begin{vmatrix}a & b \\ c & d\end{vmatrix}""", " = ad − bc，是线性代数的核心量。"),
-        Triple("斯特林近似：", """n! \approx \sqrt{2\pi n}\left(\frac{n}{e}\right)^n""", "，n 越大相对误差越小，在组合数学中广泛使用。"),
-        Triple("正态密度 p(x) = ", """\frac{1}{\sigma\sqrt{2\pi}}\,e^{-\frac{(x-\mu)^2}{2\sigma^2}}""", "，其中 μ 为均值，σ 为标准差。"),
-        Triple("柯西不等式：", """\left|\sum_k a_k b_k\right|^2 \le \sum_k a_k^2\cdot\sum_k b_k^2""", "，等号当且仅当两序列成比例时成立。"),
-        Triple("格林公式 ", """\oint_C (P\,dx+Q\,dy) = \iint_D\!\left(\frac{\partial Q}{\partial x}-\frac{\partial P}{\partial y}\right)dA""", " 将曲线积分转化为二重积分。"),
+        Triple("Golden ratio φ = ", """\frac{1+\sqrt{5}}{2}""", " ≈ 1.618, found throughout nature and art."),
+        Triple("By the Pythagorean theorem ", """a^2 + b^2 = c^2""", ", the hypotenuse of a right triangle is directly obtained."),
+        Triple("For x > 0, ", """\frac{d}{dx}\ln x = \frac{1}{x}""", " holds everywhere on the positive real line."),
+        Triple("The modulus of a complex number |z| = ", """\sqrt{a^2+b^2}""", ", where z = a + bi."),
+        Triple("As n→∞, ", """\left(1+\frac{1}{n}\right)^n""", " converges to the natural constant e ≈ 2.71828."),
+        Triple("The integral ", """\int_0^{\pi}\sin x\,dx""", " = 2 is a fundamental definite integral result."),
+        Triple("Expanding ", """\sum_{k=0}^{n}\binom{n}{k}x^k y^{n-k}""", " gives the full binomial theorem."),
+        Triple("The important limit: ", """\lim_{x \to 0} \frac{\sin x}{x}""", " = 1 is the cornerstone of trigonometric limits."),
+        Triple("The substitution t = ", """\frac{x-\mu}{\sigma}""", " converts a general normal integral to standard form."),
+        Triple("The determinant det(A) = ", """\begin{vmatrix}a & b \\ c & d\end{vmatrix}""", " = ad − bc is a core quantity in linear algebra."),
+        Triple("Stirling's approximation: ", """n! \approx \sqrt{2\pi n}\left(\frac{n}{e}\right)^n""", ", with relative error shrinking as n grows."),
+        Triple("Normal density p(x) = ", """\frac{1}{\sigma\sqrt{2\pi}}\,e^{-\frac{(x-\mu)^2}{2\sigma^2}}""", ", where μ is the mean and σ the standard deviation."),
+        Triple("Cauchy–Schwarz: ", """\left|\sum_k a_k b_k\right|^2 \le \sum_k a_k^2\cdot\sum_k b_k^2""", ", equality holds iff the sequences are proportional."),
+        Triple("Green's theorem ", """\oint_C (P\,dx+Q\,dy) = \iint_D\!\left(\frac{\partial Q}{\partial x}-\frac{\partial P}{\partial y}\right)dA""", " converts a line integral to a double integral."),
     )
 
-    // ── 多行公式混排：(描述文字, 显示公式) ────────────────────────────────
+    // ── Multiline formulas: (description, LaTeX) ──────────────────────────────
     private val multilineFormulas = listOf(
-        "含时薛定谔方程描述量子态的时间演化，其中 Ĥ 为哈密顿算符：" to
+        "The time-dependent Schrödinger equation governs quantum state evolution, where Ĥ is the Hamiltonian:" to
             """i\hbar\frac{\partial}{\partial t}\Psi(\mathbf{r},t) = \left[-\frac{\hbar^2}{2m}\nabla^2 + V(\mathbf{r},t)\right]\Psi(\mathbf{r},t)""",
 
-        "麦克斯韦方程组（微分形式），法拉第感应定律与安培-麦克斯韦定律：" to
+        "Maxwell's equations (differential form) — Faraday's induction law and the Ampère–Maxwell law:" to
             """\nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}, \quad \nabla \times \mathbf{B} = \mu_0\mathbf{J} + \mu_0\varepsilon_0\frac{\partial \mathbf{E}}{\partial t}""",
 
-        "广义相对论爱因斯坦场方程，左侧为时空曲率，右侧为能量-动量张量：" to
+        "Einstein's field equations of general relativity — spacetime curvature on the left, energy–momentum tensor on the right:" to
             """R_{\mu\nu} - \frac{1}{2}R\,g_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4}T_{\mu\nu}""",
 
-        "不可压缩 Navier-Stokes 方程，描述粘性流体运动：" to
+        "The incompressible Navier–Stokes equation describes viscous fluid motion:" to
             """\rho\!\left(\frac{\partial \mathbf{v}}{\partial t} + \mathbf{v}\cdot\nabla\mathbf{v}\right) = -\nabla p + \mu\nabla^2\mathbf{v} + \mathbf{f}""",
 
-        "泰勒级数展开（麦克劳林形式），f 在 0 处任意阶可微时成立：" to
+        "Taylor series (Maclaurin form), valid when f is infinitely differentiable at 0:" to
             """f(x) = \sum_{n=0}^{\infty}\frac{f^{(n)}(0)}{n!}x^n = f(0) + f'(0)x + \frac{f''(0)}{2!}x^2 + \cdots""",
 
-        "欧拉-拉格朗日方程，变分法中使作用量取极值的条件：" to
+        "The Euler–Lagrange equation is the condition for a functional to be stationary:" to
             """\frac{\partial \mathcal{L}}{\partial q} - \frac{d}{dt}\frac{\partial \mathcal{L}}{\partial \dot{q}} = 0""",
 
-        "路径积分（费曼形式），描述量子系统传播子：" to
+        "The Feynman path integral describes the propagator of a quantum system:" to
             """\langle x_f,t_f \mid x_i,t_i \rangle = \int \mathcal{D}[x(t)]\,\exp\!\left(\frac{i}{\hbar}\int_{t_i}^{t_f}\mathcal{L}\,dt\right)""",
 
-        "黎曼 ζ 函数满足以下函数方程（反射公式）：" to
+        "The Riemann zeta function satisfies the following functional (reflection) equation:" to
             """\zeta(s) = 2^s\pi^{s-1}\sin\!\left(\frac{\pi s}{2}\right)\Gamma(1-s)\,\zeta(1-s)""",
     )
 
@@ -104,6 +124,7 @@ class MainActivity : AppCompatActivity() {
         val fontSizeLabel = findViewById<TextView>(R.id.fontSizeLabel)
         val fontSizeSeekBar = findViewById<SeekBar>(R.id.fontSizeSeekBar)
         val customMathView = findViewById<RaTeXView>(R.id.customMathView)
+        val showcaseContainer = findViewById<LinearLayout>(R.id.showcaseContainer)
         val formulaExamplesContainer = findViewById<LinearLayout>(R.id.formulaExamplesContainer)
         val inlineMixContainer = findViewById<LinearLayout>(R.id.inlineMixContainer)
         val multilineMixContainer = findViewById<LinearLayout>(R.id.multilineMixContainer)
@@ -135,18 +156,30 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // ── 独立公式示例 ──────────────────────────────────────────────────
+        // ── Showcase ──────────────────────────────────────────────────────
+        showcaseContainer.addView(makeSectionLabel("Inline layout · baseline alignment"))
+        for (row in showcaseInlineRows) {
+            addInlineRowParsed(showcaseContainer, row, fontSizeDp)
+        }
+        showcaseContainer.addView(makeDivider())
+        for ((label, latex) in showcaseBlocks) {
+            showcaseContainer.addView(makeSectionLabel(label))
+            showcaseContainer.addView(makeCenteredMathView(latex, fontSizeDp))
+            showcaseContainer.addView(makeDivider())
+        }
+
+        // ── Preset block formulas ──────────────────────────────────────────
         for ((name, latex) in formulas) {
             formulaExamplesContainer.addView(makeSectionLabel(name))
             formulaExamplesContainer.addView(makeMathView(latex, fontSizeDp))
         }
 
-        // ── 行内混排（公式作为 Span 嵌入 TextView） ───────────────────────
+        // ── Inline mix ────────────────────────────────────────────────────
         for ((prefix, latex, suffix) in inlineFormulas) {
             addInlineRow(inlineMixContainer, prefix, latex, suffix, fontSizeDp)
         }
 
-        // ── 多行公式混排 ──────────────────────────────────────────────────
+        // ── Multiline formulas ────────────────────────────────────────────
         for ((description, latex) in multilineFormulas) {
             multilineMixContainer.addView(makeDescriptionLabel(description))
             multilineMixContainer.addView(makeCenteredMathView(latex, fontSizeDp))
@@ -159,13 +192,47 @@ class MainActivity : AppCompatActivity() {
         scope.cancel()
     }
 
-    // ── 行内混排：异步渲染公式 Bitmap，通过 ReplacementSpan 嵌入 TextView ──
+    // ── Inline row helpers ────────────────────────────────────────────────────
 
     /**
-     * 将 [prefix] + 公式 + [suffix] 拼成一个 TextView 行。
-     * 公式渲染为 Bitmap 后作为 [FormulaSpan] 嵌入 SpannableString，
-     * 文字与公式在同一 TextView 中自然流式排布，超出宽度时整体换行，
-     * 公式基线与文字基线自动对齐。
+     * Parses [text] for `$...$` inline math markers, renders each math segment
+     * as a [RaTeXSpan] and assembles them all into a single [TextView] for
+     * seamless text-and-formula flow with baseline alignment.
+     */
+    private fun addInlineRowParsed(container: LinearLayout, text: String, sizeDp: Float) {
+        val tv = TextView(this).apply {
+            this.text = text.replace(Regex("\\$[^$]+\\$"), "…")
+            setTextAppearance(android.R.style.TextAppearance_Medium)
+            setPadding(0, dp(8f), 0, dp(8f))
+            setLineSpacing(dp(6f).toFloat(), 1f)
+        }
+        container.addView(tv)
+
+        scope.launch {
+            try {
+                val parts = text.split("$")
+                val ssb = SpannableStringBuilder()
+                for ((i, part) in parts.withIndex()) {
+                    if (part.isEmpty()) continue
+                    if (i % 2 == 0) {
+                        ssb.append(part)
+                    } else {
+                        val span = RaTeXSpan.create(this@MainActivity, part, sizeDp)
+                        val start = ssb.length
+                        ssb.append("\u200B")
+                        ssb.setSpan(span, start, ssb.length, 0)
+                    }
+                }
+                tv.text = ssb
+            } catch (e: Exception) {
+                tv.text = text.replace(Regex("\\$[^$]+\\$"), "[?]")
+            }
+        }
+    }
+
+    /**
+     * Renders [latex] as a [RaTeXSpan] and inserts it between [prefix] and
+     * [suffix] inside a single [TextView], producing inline text-and-formula flow.
      */
     private fun addInlineRow(
         container: LinearLayout,
@@ -175,7 +242,7 @@ class MainActivity : AppCompatActivity() {
         sizePx: Float,
     ) {
         val tv = TextView(this).apply {
-            text = "$prefix…$suffix"          // 占位文字，渲染完成后替换
+            text = "$prefix…$suffix"
             setTextAppearance(android.R.style.TextAppearance_Medium)
             setPadding(0, dp(8f), 0, dp(8f))
             setLineSpacing(dp(6f).toFloat(), 1f)
@@ -188,17 +255,17 @@ class MainActivity : AppCompatActivity() {
                 val ssb = SpannableStringBuilder()
                 if (prefix.isNotEmpty()) ssb.append(prefix)
                 val spanStart = ssb.length
-                ssb.append("\u200B") // 零宽占位符，挂载 Span
+                ssb.append("\u200B")
                 ssb.setSpan(span, spanStart, ssb.length, 0)
                 if (suffix.isNotEmpty()) ssb.append(suffix)
                 tv.text = ssb
             } catch (e: Exception) {
-                tv.text = "$prefix [渲染失败] $suffix"
+                tv.text = "$prefix [render error] $suffix"
             }
         }
     }
 
-    // ── 通用 UI 构建 helpers ───────────────────────────────────────────────
+    // ── UI builder helpers ────────────────────────────────────────────────────
 
     private fun dp(value: Float) =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, resources.displayMetrics).toInt()

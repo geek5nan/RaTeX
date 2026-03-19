@@ -70,12 +70,10 @@ export function InlineTeX({
           latex={s.content}
           fontSize={fontSize}
           style={styles.measureView}
-          onContentSizeChange={e =>
-            setSizes(prev => ({
-              ...prev,
-              [s.id]: {width: e.nativeEvent.width, height: e.nativeEvent.height},
-            }))
-          }
+          onContentSizeChange={e => {
+            const {width, height} = e.nativeEvent;
+            setSizes(prev => ({...prev, [s.id]: {width, height}}));
+          }}
         />
       ))}
 

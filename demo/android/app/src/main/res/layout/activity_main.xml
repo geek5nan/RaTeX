@@ -12,7 +12,29 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- 自定义公式 -->
+        <!-- Showcase — first visible screen -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_showcase"
+            android:textAppearance="?attr/textAppearanceSubtitle1"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:id="@+id/showcaseContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Custom formula -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -66,7 +88,7 @@
             android:background="?android:attr/listDivider"
             android:layout_marginBottom="16dp" />
 
-        <!-- 公式示例 -->
+        <!-- Formula examples -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -88,7 +110,7 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp" />
 
-        <!-- 行内混排 -->
+        <!-- Inline layout -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -110,7 +132,7 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp" />
 
-        <!-- 多行公式混排 -->
+        <!-- Multiline formulas -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

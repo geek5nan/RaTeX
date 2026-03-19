@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">RaTeX Android Demo</string>
-    <string name="section_custom">自定义公式</string>
-    <string name="section_examples">公式示例</string>
-    <string name="section_inline">行内混排</string>
-    <string name="section_multiline">多行公式混排</string>
-    <string name="hint_latex">输入 LaTeX</string>
-    <string name="font_size_label">字号: %d pt</string>
+    <string name="section_showcase">RaTeX · Native Cross-Platform Math</string>
+    <string name="section_custom">Custom Formula</string>
+    <string name="section_examples">Formula Examples</string>
+    <string name="section_inline">Inline Layout</string>
+    <string name="section_multiline">Multiline Formulas</string>
+    <string name="hint_latex">Enter LaTeX…</string>
+    <string name="font_size_label">Size: %d pt</string>
 </resources>

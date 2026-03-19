@@ -1,21 +1,18 @@
 import SwiftUI
 
-// 展示 RaTeX 渲染效果的 Demo 界面
 struct ContentView: View {
 
-    // 预置公式列表
     let formulas: [(name: String, latex: String)] = [
-        ("二次方程", #"\frac{-b \pm \sqrt{b^2-4ac}}{2a}"#),
-        ("欧拉公式", #"e^{i\pi} + 1 = 0"#),
-        ("高斯积分", #"\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}"#),
-        ("级数",     #"\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}"#),
-        ("矩阵",     #"\begin{pmatrix}a & b \\ c & d\end{pmatrix}"#),
-        ("Maxwell", #"\nabla \times \mathbf{B} = \mu_0 \mathbf{J}"#),
-        ("二项式",   #"(x+y)^n = \sum_{k=0}^n \binom{n}{k} x^k y^{n-k}"#),
-        ("中线符号", #"\left( \frac{a}{b} \middle| \frac{c}{d} \right)"#),
-        // 较宽公式，用于观察溢出行为
-        ("薛定谔方程", #"i\hbar\frac{\partial}{\partial t}\Psi(\mathbf{r},t) = \left[-\frac{\hbar^2}{2m}\nabla^2 + V(\mathbf{r},t)\right]\Psi(\mathbf{r},t)"#),
-        ("泰勒展开",   #"f(x) = \sum_{n=0}^{\infty}\frac{f^{(n)}(0)}{n!}x^n = f(0) + f'(0)x + \frac{f''(0)}{2!}x^2 + \frac{f'''(0)}{3!}x^3 + \cdots"#),
+        ("Quadratic formula",    #"\frac{-b \pm \sqrt{b^2-4ac}}{2a}"#),
+        ("Euler's identity",     #"e^{i\pi} + 1 = 0"#),
+        ("Gaussian integral",    #"\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}"#),
+        ("Basel problem",        #"\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}"#),
+        ("Matrix",               #"\begin{pmatrix}a & b \\ c & d\end{pmatrix}"#),
+        ("Maxwell",              #"\nabla \times \mathbf{B} = \mu_0 \mathbf{J}"#),
+        ("Binomial theorem",     #"(x+y)^n = \sum_{k=0}^n \binom{n}{k} x^k y^{n-k}"#),
+        ("Middle delimiter",     #"\left( \frac{a}{b} \middle| \frac{c}{d} \right)"#),
+        ("Schrödinger equation", #"i\hbar\frac{\partial}{\partial t}\Psi(\mathbf{r},t) = \left[-\frac{\hbar^2}{2m}\nabla^2 + V(\mathbf{r},t)\right]\Psi(\mathbf{r},t)"#),
+        ("Taylor series",        #"f(x) = \sum_{n=0}^{\infty}\frac{f^{(n)}(0)}{n!}x^n = f(0) + f'(0)x + \frac{f''(0)}{2!}x^2 + \frac{f'''(0)}{3!}x^3 + \cdots"#),
     ]
 
     @State private var customLatex: String = #"\frac{d}{dx}\left[\int_a^x f(t)\,dt\right] = f(x)"#
@@ -24,27 +21,28 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             List {
-                // 自定义输入区
-                Section("自定义公式") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        TextField("输入 LaTeX", text: $customLatex)
-                            .font(.system(.body, design: .monospaced))
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-
-                        HStack {
-                            Text("字号: \(Int(fontSize))pt")
-                                .font(.caption)
-                            Slider(value: $fontSize, in: 14...48, step: 2)
-                        }
-
-                        RaTeXFormulaCell(latex: customLatex, fontSize: CGFloat(fontSize))
-                    }
-                    .padding(.vertical, 8)
+                // Showcase — first visible screen
+                Section("RaTeX · Native Cross-Platform Math") {
+                    ShowcaseView()
                 }
 
-                // 预置公式
-                Section("公式示例") {
+                // Inline math mixed with text
+                Section("Inline Layout") {
+                    InlineExamplesView()
+                }
+
+                // Block formulas inside prose paragraphs
+                Section("Block Layout") {
+                    BlockExamplesView()
+                }
+
+                // Step-by-step derivation
+                Section("Derivation") {
+                    DerivationView()
+                }
+
+                // More preset formulas
+                Section("More Formulas") {
                     ForEach(formulas, id: \.name) { item in
                         VStack(alignment: .leading, spacing: 8) {
                             Text(item.name)
@@ -56,19 +54,23 @@ struct ContentView: View {
                     }
                 }
 
-                // 图文混排：行内公式（FlowLayout 自动折行 + 基线对齐）
-                Section("行内混排") {
-                    InlineExamplesView()
-                }
+                // Custom input
+                Section("Custom Formula") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        TextField("Enter LaTeX…", text: $customLatex)
+                            .font(.system(.body, design: .monospaced))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
 
-                // 图文混排：段落 + 块级公式
-                Section("段落混排") {
-                    BlockExamplesView()
-                }
+                        HStack {
+                            Text("Size: \(Int(fontSize))pt")
+                                .font(.caption)
+                            Slider(value: $fontSize, in: 14...48, step: 2)
+                        }
 
-                // 图文混排：推导过程
-                Section("推导过程") {
-                    DerivationView()
+                        RaTeXFormulaCell(latex: customLatex, fontSize: CGFloat(fontSize))
+                    }
+                    .padding(.vertical, 8)
                 }
             }
             .navigationTitle("RaTeX Demo")
@@ -76,12 +78,123 @@ struct ContentView: View {
     }
 }
 
+// MARK: - Showcase
+
+/// First-screen highlight: inline baseline alignment, complex nesting,
+/// 3×3 matrix, and custom operators — all rendered natively in Rust.
+struct ShowcaseView: View {
+    private let fs: CGFloat = 19
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+
+            // 1. Inline layout — text wrapping around formulas with baseline alignment
+            VStack(alignment: .leading, spacing: 10) {
+                badge("Inline layout · baseline alignment")
+
+                // 1a: single short formula mid-sentence
+                FlowLayout(horizontalSpacing: 3, lineSpacing: 6) {
+                    Text("Einstein showed that mass and energy are")
+                    RaTeXFormula(latex: #"E = mc^2"#, fontSize: fs, onError: { _ in })
+                    Text(", where")
+                    RaTeXFormula(latex: #"c"#, fontSize: fs, onError: { _ in })
+                    Text("is the speed of light.")
+                }
+
+                // 1b: two formulas in one sentence
+                FlowLayout(horizontalSpacing: 3, lineSpacing: 6) {
+                    Text("A circle of radius")
+                    RaTeXFormula(latex: #"r"#, fontSize: fs, onError: { _ in })
+                    Text("has area")
+                    RaTeXFormula(latex: #"S = \pi r^2"#, fontSize: fs, onError: { _ in })
+                    Text("and circumference")
+                    RaTeXFormula(latex: #"C = 2\pi r"#, fontSize: fs, onError: { _ in })
+                    Text(".")
+                }
+
+                // 1c: fraction inline between text
+                FlowLayout(horizontalSpacing: 3, lineSpacing: 6) {
+                    Text("The golden ratio")
+                    RaTeXFormula(latex: #"\varphi = \frac{1+\sqrt{5}}{2}"#, fontSize: fs, onError: { _ in })
+                    Text("satisfies")
+                    RaTeXFormula(latex: #"\varphi^2 = \varphi + 1"#, fontSize: fs, onError: { _ in })
+                    Text(".")
+                }
+
+                // 1d: matrix inline between text
+                FlowLayout(horizontalSpacing: 3, lineSpacing: 6) {
+                    Text("If")
+                    RaTeXFormula(latex: #"A = \begin{pmatrix} a & b \\ c & d \end{pmatrix}"#, fontSize: fs, onError: { _ in })
+                    Text(", then")
+                    RaTeXFormula(latex: #"\det A = ad - bc"#, fontSize: fs, onError: { _ in })
+                    Text(".")
+                }
+            }
+
+            Divider()
+
+            // 2. Fourier transform — multi-level exponent nesting
+            VStack(alignment: .leading, spacing: 6) {
+                badge("Fourier transform")
+                RaTeXFormula(
+                    latex: #"\hat{f}(\xi) = \int_{-\infty}^{\infty} f(x)\,e^{-2\pi i x \xi}\,dx"#,
+                    fontSize: 22, onError: { _ in }
+                )
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+
+            Divider()
+
+            // 3. 3×3 rotation matrix
+            VStack(alignment: .leading, spacing: 6) {
+                badge("3D rotation matrix")
+                RaTeXFormula(
+                    latex: #"R_z(\theta)=\begin{pmatrix}\cos\theta&-\sin\theta&0\\\sin\theta&\cos\theta&0\\0&0&1\end{pmatrix}"#,
+                    fontSize: 21, onError: { _ in }
+                )
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+
+            Divider()
+
+            // 4. Time-dependent Schrödinger equation
+            VStack(alignment: .leading, spacing: 6) {
+                badge("Schrödinger equation")
+                RaTeXFormula(
+                    latex: #"i\hbar\frac{\partial}{\partial t}\Psi = \left[-\frac{\hbar^2}{2m}\nabla^2 + V\right]\Psi"#,
+                    fontSize: 21, onError: { _ in }
+                )
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+
+            Divider()
+
+            // 5. Residue theorem — \operatorname
+            VStack(alignment: .leading, spacing: 6) {
+                badge("Residue theorem · \\operatorname")
+                RaTeXFormula(
+                    latex: #"\oint_C f(z)\,dz = 2\pi i \sum_k \operatorname{Res}(f,z_k)"#,
+                    fontSize: 21, onError: { _ in }
+                )
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    private func badge(_ text: String) -> some View {
+        Text(text)
+            .font(.caption.bold())
+            .foregroundStyle(.secondary)
+    }
+}
+
 // MARK: - FlowLayout
 
-/// 自动折行布局：子视图按水平方向排列，超出宽度后换行。
-/// 同行内对齐策略：
-///   - RaTeXFormula → 读取 RaTeXFormulaAscentKey（库内置，第一帧即可用）
-///   - 普通 Text 视图 → 用 SwiftUI 原生 firstTextBaseline
+/// Wrapping layout that places children left-to-right and wraps to the next
+/// line when the available width is exceeded. Within each line, items are
+/// baseline-aligned using RaTeXFormulaAscentKey for math views and
+/// SwiftUI's firstTextBaseline for plain Text views.
 struct FlowLayout: Layout {
     var horizontalSpacing: CGFloat = 4
     var lineSpacing: CGFloat = 6
@@ -108,14 +221,9 @@ struct FlowLayout: Layout {
 
         var y = bounds.minY
         for line in cache {
-            // 读取每个子视图的基线：
-            //   RaTeXFormula → RaTeXFormulaAscentKey（库内置，第一帧即可用）
-            //   普通 Text    → d[.firstTextBaseline]（SwiftUI 原生，对 Text 准确）
             let baselines: [CGFloat] = line.map { item in
                 let customAscent = subviews[item.index][RaTeXFormulaAscentKey.self]
-                if customAscent > 0 {
-                    return customAscent
-                }
+                if customAscent > 0 { return customAscent }
                 let d = subviews[item.index].dimensions(in: ProposedViewSize(item.size))
                 let native = d[.firstTextBaseline]
                 return native > 0 ? native : item.size.height / 2
@@ -160,108 +268,107 @@ struct FlowLayout: Layout {
     }
 }
 
-// MARK: - 行内混排示例
+// MARK: - Inline Examples
 
-/// 每个示例使用 FlowLayout 将文字片段与公式视图混排，
-/// 超出屏幕宽度自动折行，同行内保持基线对齐。
 struct InlineExamplesView: View {
-    // 公式字号与周围 body 文字视觉匹配
     private let fs: CGFloat = 17
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
 
-            // ── 示例 1：牛顿第二定律 ──────────────────────────────
+            // Example 1: Newton's second law
             VStack(alignment: .leading, spacing: 6) {
-                Label("牛顿第二定律", systemImage: "atom")
+                Label("Newton's second law", systemImage: "atom")
                     .font(.caption.bold()).foregroundStyle(.secondary)
 
                 FlowLayout(horizontalSpacing: 3, lineSpacing: 6) {
-                    Text("物体所受合力")
+                    Text("The net force")
                     RaTeXFormula(latex: #"F"#,      fontSize: fs, onError: { _ in })
-                    Text("等于质量")
+                    Text("on an object equals mass")
                     RaTeXFormula(latex: #"m"#,      fontSize: fs, onError: { _ in })
-                    Text("与加速度")
+                    Text("times acceleration")
                     RaTeXFormula(latex: #"a"#,      fontSize: fs, onError: { _ in })
-                    Text("之积，即")
+                    Text(", i.e.")
                     RaTeXFormula(latex: #"F = ma"#, fontSize: fs, onError: { _ in })
-                    Text("（单位：N = kg·m/s²）")
+                    Text("(unit: N = kg·m/s²).")
                 }
             }
 
             Divider()
 
-            // ── 示例 2：圆的几何量 ───────────────────────────────
+            // Example 2: Circle geometry
             VStack(alignment: .leading, spacing: 6) {
-                Label("圆的几何量", systemImage: "circle")
+                Label("Circle geometry", systemImage: "circle")
                     .font(.caption.bold()).foregroundStyle(.secondary)
 
                 FlowLayout(horizontalSpacing: 3, lineSpacing: 6) {
-                    Text("半径为")
+                    Text("A circle of radius")
                     RaTeXFormula(latex: #"r"#,                   fontSize: fs, onError: { _ in })
-                    Text("的圆：面积")
+                    Text("has area")
                     RaTeXFormula(latex: #"S = \pi r^2"#,         fontSize: fs, onError: { _ in })
-                    Text("，周长")
+                    Text("and circumference")
                     RaTeXFormula(latex: #"C = 2\pi r"#,          fontSize: fs, onError: { _ in })
-                    Text("，其中")
+                    Text(", where")
                     RaTeXFormula(latex: #"\pi \approx 3.14159"#, fontSize: fs, onError: { _ in })
+                    Text(".")
                 }
             }
 
             Divider()
 
-            // ── 示例 3：一元二次方程的判别式 ─────────────────────
+            // Example 3: Discriminant
             VStack(alignment: .leading, spacing: 6) {
-                Label("一元二次方程的判别式", systemImage: "function")
+                Label("Discriminant", systemImage: "function")
                     .font(.caption.bold()).foregroundStyle(.secondary)
 
                 FlowLayout(horizontalSpacing: 3, lineSpacing: 6) {
-                    Text("判别式")
+                    Text("The discriminant")
                     RaTeXFormula(latex: #"\Delta = b^2 - 4ac"#, fontSize: fs, onError: { _ in })
-                    Text("决定根的个数：")
+                    Text("determines the number of roots:")
                     RaTeXFormula(latex: #"\Delta > 0"#,          fontSize: fs, onError: { _ in })
-                    Text("两个不等实根，")
+                    Text("two distinct roots,")
                     RaTeXFormula(latex: #"\Delta = 0"#,          fontSize: fs, onError: { _ in })
-                    Text("重根，")
+                    Text("one repeated root,")
                     RaTeXFormula(latex: #"\Delta < 0"#,          fontSize: fs, onError: { _ in })
-                    Text("无实数根")
+                    Text("no real roots.")
                 }
             }
 
             Divider()
 
-            // ── 示例 4：机械能守恒 ───────────────────────────────
+            // Example 4: Conservation of mechanical energy
             VStack(alignment: .leading, spacing: 6) {
-                Label("机械能守恒", systemImage: "bolt.circle")
+                Label("Conservation of energy", systemImage: "bolt.circle")
                     .font(.caption.bold()).foregroundStyle(.secondary)
 
                 FlowLayout(horizontalSpacing: 3, lineSpacing: 6) {
-                    Text("只有重力做功时，动能")
+                    Text("When only gravity acts, kinetic energy")
                     RaTeXFormula(latex: #"E_k"#,            fontSize: fs, onError: { _ in })
-                    Text("与势能")
+                    Text("plus potential energy")
                     RaTeXFormula(latex: #"E_p"#,            fontSize: fs, onError: { _ in })
-                    Text("之和守恒，即")
+                    Text("is conserved:")
                     RaTeXFormula(latex: #"E_k + E_p = C"#, fontSize: fs, onError: { _ in })
-                    Text("（C 为常量）")
+                    Text("(C constant).")
                 }
             }
 
             Divider()
 
-            // ── 示例 5：行列式 ───────────────────────────────────
+            // Example 5: Determinant
             VStack(alignment: .leading, spacing: 6) {
-                Label("行列式", systemImage: "grid")
+                Label("Determinant", systemImage: "grid")
                     .font(.caption.bold()).foregroundStyle(.secondary)
 
                 FlowLayout(horizontalSpacing: 3, lineSpacing: 8) {
-                    Text("若")
+                    Text("If")
                     RaTeXFormula(latex: #"A = \begin{vmatrix} a & b \\ c & d \end{vmatrix}"#, fontSize: fs, onError: { _ in })
-                    Text("，则")
+                    Text(", then")
                     RaTeXFormula(latex: #"\det(A) = ad - bc"#, fontSize: fs, onError: { _ in })
-                    Text("；3阶行列式")
+                    Text(". For a 3×3 determinant")
                     RaTeXFormula(latex: #"B = \begin{vmatrix} a & b & c \\ d & e & f \\ g & h & i \end{vmatrix}"#, fontSize: fs, onError: { _ in })
-                    Text("按第一行展开得")
+                    Text("expanded along the first row:")
                     RaTeXFormula(latex: #"\det(B) = a(ei-fh) - b(di-fg) + c(dh-eg)"#, fontSize: fs, onError: { _ in })
+                    Text(".")
                 }
             }
         }
@@ -269,27 +376,26 @@ struct InlineExamplesView: View {
     }
 }
 
-// MARK: - 段落混排示例
+// MARK: - Block Examples
 
-/// 段落混排：散文段落中嵌入居中块级公式
 struct BlockExamplesView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
 
-            // 示例 1：质能方程
+            // Example 1: Mass–energy equivalence
             VStack(alignment: .leading, spacing: 8) {
-                Label("质能方程", systemImage: "bolt.fill")
+                Label("Mass–energy equivalence", systemImage: "bolt.fill")
                     .font(.caption.bold())
                     .foregroundStyle(.secondary)
 
-                Text("爱因斯坦在狭义相对论中推导出：静止质量为 m 的物体，其静能为")
+                Text("Einstein derived from special relativity that the rest energy of a body with mass m is")
                     .fixedSize(horizontal: false, vertical: true)
 
                 RaTeXFormula(latex: #"E = mc^2"#, fontSize: 28, onError: { _ in })
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 4)
 
-                Text("其中 c ≈ 3×10⁸ m/s 为真空光速。该公式表明质量与能量可以相互转换，是核能利用的理论基础。")
+                Text("where c ≈ 3×10⁸ m/s is the speed of light in vacuum. It shows that mass and energy are interconvertible.")
                     .fixedSize(horizontal: false, vertical: true)
                     .foregroundStyle(.secondary)
             }
@@ -297,13 +403,13 @@ struct BlockExamplesView: View {
 
             Divider()
 
-            // 示例 2：麦克斯韦方程组
+            // Example 2: Maxwell's equations (integral form)
             VStack(alignment: .leading, spacing: 8) {
-                Label("麦克斯韦方程组（积分形式）", systemImage: "wave.3.right")
+                Label("Maxwell's equations (integral form)", systemImage: "wave.3.right")
                     .font(.caption.bold())
                     .foregroundStyle(.secondary)
 
-                Text("电磁场由以下四个方程完整描述：")
+                Text("The electromagnetic field is fully described by these four equations:")
 
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(maxwellEquations, id: \.label) { eq in
@@ -311,7 +417,7 @@ struct BlockExamplesView: View {
                             Text(eq.label)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .frame(width: 80, alignment: .trailing)
+                                .frame(width: 90, alignment: .trailing)
                             RaTeXFormula(latex: eq.latex, fontSize: 18, onError: { _ in })
                         }
                     }
@@ -322,13 +428,13 @@ struct BlockExamplesView: View {
 
             Divider()
 
-            // 示例 3：泰勒展开
+            // Example 3: Taylor series
             VStack(alignment: .leading, spacing: 8) {
-                Label("泰勒展开", systemImage: "chart.line.uptrend.xyaxis")
+                Label("Taylor series", systemImage: "chart.line.uptrend.xyaxis")
                     .font(.caption.bold())
                     .foregroundStyle(.secondary)
 
-                Text("函数 f(x) 在 x = a 处的泰勒级数展开为：")
+                Text("The Taylor series of f(x) around x = a is:")
                     .fixedSize(horizontal: false, vertical: true)
 
                 RaTeXFormula(
@@ -339,7 +445,7 @@ struct BlockExamplesView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.vertical, 4)
 
-                Text("常用展开：")
+                Text("Common expansions:")
 
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(taylorExamples, id: \.name) { item in
@@ -359,10 +465,10 @@ struct BlockExamplesView: View {
     }
 
     private let maxwellEquations: [(label: String, latex: String)] = [
-        ("高斯定律",   #"\oint \mathbf{E} \cdot d\mathbf{A} = \frac{Q}{\varepsilon_0}"#),
-        ("磁高斯定律", #"\oint \mathbf{B} \cdot d\mathbf{A} = 0"#),
-        ("法拉第定律", #"\oint \mathbf{E} \cdot d\mathbf{l} = -\frac{d\Phi_B}{dt}"#),
-        ("安培定律",   #"\oint \mathbf{B} \cdot d\mathbf{l} = \mu_0 I + \mu_0\varepsilon_0 \frac{d\Phi_E}{dt}"#),
+        ("Gauss's law",      #"\oint \mathbf{E} \cdot d\mathbf{A} = \frac{Q}{\varepsilon_0}"#),
+        ("Gauss (magn.)",    #"\oint \mathbf{B} \cdot d\mathbf{A} = 0"#),
+        ("Faraday's law",    #"\oint \mathbf{E} \cdot d\mathbf{l} = -\frac{d\Phi_B}{dt}"#),
+        ("Ampère's law",     #"\oint \mathbf{B} \cdot d\mathbf{l} = \mu_0 I + \mu_0\varepsilon_0 \frac{d\Phi_E}{dt}"#),
     ]
 
     private let taylorExamples: [(name: String, latex: String)] = [
@@ -372,13 +478,12 @@ struct BlockExamplesView: View {
     ]
 }
 
-// MARK: - 推导过程示例
+// MARK: - Derivation
 
-/// 推导过程：分步骤展示公式推导，文字与公式交替出现
 struct DerivationView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("二次公式推导", systemImage: "graduationcap")
+            Label("Deriving the quadratic formula", systemImage: "graduationcap")
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
                 .padding(.bottom, 4)
@@ -419,30 +524,20 @@ struct DerivationView: View {
     }
 
     private let derivationSteps: [Step] = [
-        Step(
-            description: "从标准形式出发",
-            latex: #"ax^2 + bx + c = 0 \quad (a \neq 0)"#
-        ),
-        Step(
-            description: "两边除以 a，使二次项系数为 1",
-            latex: #"x^2 + \frac{b}{a}x + \frac{c}{a} = 0"#
-        ),
-        Step(
-            description: "配方：将左侧凑成完全平方形式",
-            latex: #"\left(x + \frac{b}{2a}\right)^2 = \frac{b^2 - 4ac}{4a^2}"#
-        ),
-        Step(
-            description: "两边开平方（注意取 ±）",
-            latex: #"x + \frac{b}{2a} = \pm\frac{\sqrt{b^2 - 4ac}}{2a}"#
-        ),
-        Step(
-            description: "移项得到二次公式",
-            latex: #"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}"#
-        ),
+        Step(description: "Start from the standard form",
+             latex: #"ax^2 + bx + c = 0 \quad (a \neq 0)"#),
+        Step(description: "Divide both sides by a",
+             latex: #"x^2 + \frac{b}{a}x + \frac{c}{a} = 0"#),
+        Step(description: "Complete the square",
+             latex: #"\left(x + \frac{b}{2a}\right)^2 = \frac{b^2 - 4ac}{4a^2}"#),
+        Step(description: "Take the square root of both sides (±)",
+             latex: #"x + \frac{b}{2a} = \pm\frac{\sqrt{b^2 - 4ac}}{2a}"#),
+        Step(description: "Isolate x to obtain the quadratic formula",
+             latex: #"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}"#),
     ]
 }
 
-// MARK: - 单个公式 Cell（带错误显示）
+// MARK: - Formula Cell
 
 struct RaTeXFormulaCell: View {
     let latex: String
@@ -457,7 +552,6 @@ struct RaTeXFormulaCell: View {
                     .font(.caption)
                     .foregroundStyle(.red)
             } else {
-                // RaTeXFormula 来自 Sources/RaTeX/RaTeXView.swift
                 RaTeXFormula(
                     latex: latex,
                     fontSize: fontSize,

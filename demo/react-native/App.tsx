@@ -12,31 +12,57 @@ import {
 } from 'react-native';
 import {InlineTeX, RaTeXView} from 'ratex-react-native';
 
+const SHOWCASE_INLINE_ROWS = [
+  String.raw`Einstein showed that mass and energy are $E = mc^2$, where $c$ is the speed of light.`,
+  String.raw`A circle of radius $r$ has area $S = \pi r^2$ and circumference $C = 2\pi r$.`,
+  String.raw`The golden ratio $\varphi = \frac{1+\sqrt{5}}{2}$ satisfies $\varphi^2 = \varphi + 1$.`,
+  String.raw`If $A = \begin{pmatrix} a & b \\ c & d \end{pmatrix}$, then $\det A = ad - bc$.`,
+];
+
+const SHOWCASE_BLOCKS = [
+  {
+    label: 'Fourier transform',
+    latex: String.raw`\hat{f}(\xi) = \int_{-\infty}^{\infty} f(x)\,e^{-2\pi i x \xi}\,dx`,
+  },
+  {
+    label: '3D rotation matrix',
+    latex: String.raw`R_z(\theta)=\begin{pmatrix}\cos\theta&-\sin\theta&0\\\sin\theta&\cos\theta&0\\0&0&1\end{pmatrix}`,
+  },
+  {
+    label: 'Schrödinger equation',
+    latex: String.raw`i\hbar\frac{\partial}{\partial t}\Psi = \left[-\frac{\hbar^2}{2m}\nabla^2 + V\right]\Psi`,
+  },
+  {
+    label: String.raw`Residue theorem · \operatorname`,
+    latex: String.raw`\oint_C f(z)\,dz = 2\pi i \sum_k \operatorname{Res}(f,z_k)`,
+  },
+];
+
 const FORMULAS = [
-  {name: '二次方程', latex: String.raw`\frac{-b \pm \sqrt{b^2-4ac}}{2a}`},
-  {name: '欧拉公式', latex: String.raw`e^{i\pi} + 1 = 0`},
-  {name: '高斯积分', latex: String.raw`\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}`},
-  {name: '级数', latex: String.raw`\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}`},
-  {name: '矩阵', latex: String.raw`\begin{pmatrix}a & b \\ c & d\end{pmatrix}`},
-  {name: 'Maxwell', latex: String.raw`\nabla \times \mathbf{B} = \mu_0 \mathbf{J}`},
+  {name: 'Quadratic formula',    latex: String.raw`\frac{-b \pm \sqrt{b^2-4ac}}{2a}`},
+  {name: "Euler's identity",     latex: String.raw`e^{i\pi} + 1 = 0`},
+  {name: 'Gaussian integral',    latex: String.raw`\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}`},
+  {name: 'Basel problem',        latex: String.raw`\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}`},
+  {name: 'Matrix',               latex: String.raw`\begin{pmatrix}a & b \\ c & d\end{pmatrix}`},
+  {name: 'Maxwell',              latex: String.raw`\nabla \times \mathbf{B} = \mu_0 \mathbf{J}`},
 ];
 
 const INLINE_EXAMPLES = [
   {
-    name: '单行内联 — 能量',
-    content: String.raw`质能等价关系：$E = mc^2$，这是狭义相对论的核心结论。`,
+    name: 'Single-line — energy',
+    content: String.raw`Mass–energy equivalence: $E = mc^2$, the central result of special relativity.`,
   },
   {
-    name: '单行内联 — 勾股定理',
-    content: String.raw`对于直角三角形，三边满足 $a^2 + b^2 = c^2$，其中 c 为斜边。`,
+    name: "Single-line — Pythagorean theorem",
+    content: String.raw`For a right triangle, the sides satisfy $a^2 + b^2 = c^2$, where c is the hypotenuse.`,
   },
   {
-    name: '多行内联 — 积分',
-    content: String.raw`正态分布的归一化条件为 $\int_{-\infty}^{+\infty} \frac{1}{\sqrt{2\pi}\,\sigma} e^{-\frac{(x-\mu)^2}{2\sigma^2}} dx = 1$，其中 μ 为均值，σ 为标准差。`,
+    name: 'Multi-line — integral',
+    content: String.raw`The normal distribution is normalised: $\int_{-\infty}^{+\infty} \frac{1}{\sqrt{2\pi}\,\sigma} e^{-\frac{(x-\mu)^2}{2\sigma^2}} dx = 1$, where μ is the mean and σ the standard deviation.`,
   },
   {
-    name: '多行内联 — 矩阵行列式',
-    content: String.raw`二阶矩阵的行列式定义为 $\det\begin{pmatrix}a & b \\ c & d\end{pmatrix} = ad - bc$，不等于零时矩阵可逆。`,
+    name: 'Multi-line — determinant',
+    content: String.raw`The determinant of a 2×2 matrix is $\det\begin{pmatrix}a & b \\ c & d\end{pmatrix} = ad - bc$; the matrix is invertible when this is non-zero.`,
   },
 ];
 
@@ -52,7 +78,54 @@ export default function App() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[styles.title, isDark && styles.textLight]}>RaTeX Demo</Text>
 
+        {/* Showcase — first visible screen */}
+        <Text style={[styles.sectionTitle, isDark && styles.textLight]}>
+          RaTeX · Native Cross-Platform Math
+        </Text>
+        <View style={styles.card}>
+          <Text style={[styles.label, isDark && styles.textLight]}>
+            Inline layout · baseline alignment
+          </Text>
+          {SHOWCASE_INLINE_ROWS.map((row, i) => (
+            <InlineTeX
+              key={i}
+              content={row}
+              fontSize={16}
+              textStyle={[styles.inlineText, isDark && styles.textLight]}
+            />
+          ))}
+        </View>
+        {SHOWCASE_BLOCKS.map(({label, latex}) => (
+          <View key={label} style={styles.card}>
+            <Text style={[styles.label, isDark && styles.textLight]}>{label}</Text>
+            <RaTeXView latex={latex} fontSize={22} style={styles.formula} />
+          </View>
+        ))}
+
+        {/* Inline formula examples */}
+        <Text style={[styles.sectionTitle, isDark && styles.textLight]}>Inline Layout</Text>
+        {INLINE_EXAMPLES.map(({name, content}) => (
+          <View key={name} style={styles.card}>
+            <Text style={[styles.label, isDark && styles.textLight]}>{name}</Text>
+            <InlineTeX
+              content={content}
+              fontSize={16}
+              textStyle={[styles.inlineText, isDark && styles.textLight]}
+            />
+          </View>
+        ))}
+
+        {/* Preset block formulas */}
+        <Text style={[styles.sectionTitle, isDark && styles.textLight]}>Formula Examples</Text>
+        {FORMULAS.map(({name, latex}) => (
+          <View key={name} style={styles.card}>
+            <Text style={[styles.label, isDark && styles.textLight]}>{name}</Text>
+            <RaTeXView latex={latex} fontSize={24} style={styles.formula} />
+          </View>
+        ))}
+
         {/* Custom input */}
+        <Text style={[styles.sectionTitle, isDark && styles.textLight]}>Custom Formula</Text>
         <View style={styles.card}>
           <TextInput
             style={styles.input}
@@ -61,7 +134,7 @@ export default function App() {
               setCustom(v);
               setError('');
             }}
-            placeholder="输入 LaTeX..."
+            placeholder="Enter LaTeX…"
             autoCapitalize="none"
           />
           <View style={styles.sizeRow}>
@@ -81,28 +154,6 @@ export default function App() {
             onError={e => setError(e.nativeEvent.error)}
           />
         </View>
-
-        {/* Inline formula examples */}
-        <Text style={[styles.sectionTitle, isDark && styles.textLight]}>内联公式示例</Text>
-        {INLINE_EXAMPLES.map(({name, content}) => (
-          <View key={name} style={styles.card}>
-            <Text style={[styles.label, isDark && styles.textLight]}>{name}</Text>
-            <InlineTeX
-              content={content}
-              fontSize={16}
-              textStyle={[styles.inlineText, isDark && styles.textLight]}
-            />
-          </View>
-        ))}
-
-        {/* Preset formulas */}
-        <Text style={[styles.sectionTitle, isDark && styles.textLight]}>块级公式示例</Text>
-        {FORMULAS.map(({name, latex}) => (
-          <View key={name} style={styles.card}>
-            <Text style={[styles.label, isDark && styles.textLight]}>{name}</Text>
-            <RaTeXView latex={latex} fontSize={24} style={styles.formula} />
-          </View>
-        ))}
       </ScrollView>
     </SafeAreaView>
   );
