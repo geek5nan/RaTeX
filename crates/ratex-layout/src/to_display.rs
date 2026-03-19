@@ -309,6 +309,7 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
         BoxContent::Array {
             cells,
             col_widths,
+            col_aligns,
             row_heights,
             row_depths,
             col_gap,
@@ -321,7 +322,12 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
                 let mut cur_x = x;
                 for (c, cell) in row.iter().enumerate() {
                     let cw = col_widths[c];
-                    let cell_x = cur_x + (cw - cell.width) * scale / 2.0;
+                    let align = col_aligns.get(c).copied().unwrap_or(b'c');
+                    let cell_x = match align {
+                        b'l' => cur_x,
+                        b'r' => cur_x + (cw - cell.width) * scale,
+                        _ => cur_x + (cw - cell.width) * scale / 2.0,
+                    };
                     emit_box(cell, cell_x, cur_y, scale, items);
                     cur_x += cw * scale;
                     if c + 1 < row.len() {

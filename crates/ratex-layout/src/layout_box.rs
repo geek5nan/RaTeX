@@ -108,6 +108,8 @@ pub enum BoxContent {
     Array {
         cells: Vec<Vec<LayoutBox>>,
         col_widths: Vec<f64>,
+        /// Per-column alignment: b'l', b'c', or b'r'.
+        col_aligns: Vec<u8>,
         row_heights: Vec<f64>,
         row_depths: Vec<f64>,
         col_gap: f64,

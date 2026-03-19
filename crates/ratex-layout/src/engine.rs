@@ -1876,7 +1876,7 @@ fn layout_delim_sizing(size: u8, delim: &str, options: &LayoutOptions) -> Layout
 #[allow(clippy::too_many_arguments)]
 fn layout_array(
     body: &[Vec<ParseNode>],
-    _cols: Option<&[ratex_parser::parse_node::AlignSpec]>,
+    cols: Option<&[ratex_parser::parse_node::AlignSpec]>,
     arraystretch: f64,
     add_jot: bool,
     row_gaps: &[Option<ratex_parser::parse_node::Measurement>],
@@ -1913,6 +1913,27 @@ fn layout_array(
     }
 
     let num_cols = body.iter().map(|r| r.len()).max().unwrap_or(0);
+
+    // Extract per-column alignment from cols spec (default to 'c').
+    let col_aligns: Vec<u8> = {
+        use ratex_parser::parse_node::AlignType;
+        let align_specs: Vec<&ratex_parser::parse_node::AlignSpec> = cols
+            .map(|cs| {
+                cs.iter()
+                    .filter(|s| matches!(s.align_type, AlignType::Align))
+                    .collect()
+            })
+            .unwrap_or_default();
+        (0..num_cols)
+            .map(|c| {
+                align_specs
+                    .get(c)
+                    .and_then(|s| s.align.as_deref())
+                    .and_then(|a| a.bytes().next())
+                    .unwrap_or(b'c')
+            })
+            .collect()
+    };
 
     // Layout all cells
     let mut cell_boxes: Vec<Vec<LayoutBox>> = Vec::with_capacity(num_rows);
@@ -1990,6 +2011,7 @@ fn layout_array(
         content: BoxContent::Array {
             cells: cell_boxes,
             col_widths: col_widths.clone(),
+            col_aligns,
             row_heights: row_heights.clone(),
             row_depths: row_depths.clone(),
             col_gap,
