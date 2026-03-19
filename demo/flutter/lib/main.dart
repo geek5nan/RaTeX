@@ -10,6 +10,50 @@
 import 'package:flutter/material.dart';
 import 'package:ratex_flutter/ratex_flutter.dart';
 
+// ---------------------------------------------------------------------------
+// Inline math paragraph helper
+//
+// Parses a string that contains inline LaTeX segments delimited by $...$
+// and builds a RichText with WidgetSpans for the math parts.
+// ---------------------------------------------------------------------------
+
+/// Parses [text] with `$...$` inline math markers and returns a [RichText]
+/// that intermixes plain [TextSpan]s with [WidgetSpan]s containing
+/// [RaTeXWidget]s.
+Widget buildInlineMath(
+  String text, {
+  double mathFontSize = 18,
+  TextStyle? textStyle,
+}) {
+  final style = textStyle ??
+      const TextStyle(fontSize: 16, height: 1.8, color: Colors.black87);
+
+  final parts = text.split('\$');
+  final spans = <InlineSpan>[];
+
+  for (int i = 0; i < parts.length; i++) {
+    if (parts[i].isEmpty) continue;
+    if (i.isEven) {
+      // Plain text segment
+      spans.add(TextSpan(text: parts[i], style: style));
+    } else {
+      // Inline math segment
+      spans.add(WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        baseline: TextBaseline.alphabetic,
+        child: RaTeXWidget(
+          latex: parts[i],
+          fontSize: mathFontSize,
+          onError: (e) => debugPrint('RaTeX inline error: $e'),
+          loading: const SizedBox.shrink(),
+        ),
+      ));
+    }
+  }
+
+  return RichText(text: TextSpan(children: spans));
+}
+
 void main() {
   runApp(const RaTeXDemoApp());
 }
@@ -116,6 +160,57 @@ class _DemoPageState extends State<DemoPage> {
                   const SizedBox(height: 8),
                   _FormulaCard(
                       latex: _controller.text, fontSize: _fontSize),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // ── Inline math in text ─────────────────────────────────────────
+          _SectionHeader('行内公式'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Single-line example
+                  Text('单行示例',
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelSmall
+                          ?.copyWith(color: Colors.grey)),
+                  const SizedBox(height: 6),
+                  buildInlineMath(
+                    r'欧拉恒等式 $e^{i\pi}+1=0$ 被誉为最美丽的数学公式。',
+                  ),
+                  const SizedBox(height: 16),
+                  // Multi-line example 1 — physics
+                  Text('多行示例（物理）',
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelSmall
+                          ?.copyWith(color: Colors.grey)),
+                  const SizedBox(height: 6),
+                  buildInlineMath(
+                    r'质能等价关系为 $E = mc^2$，其中光速 $c \approx 3\times10^8\ \text{m/s}$。'
+                    '\n'
+                    r'动量 $p = mv$ 满足牛顿第二定律 $F = \frac{dp}{dt}$。',
+                  ),
+                  const SizedBox(height: 16),
+                  // Multi-line example 2 — math
+                  Text('多行示例（数学）',
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelSmall
+                          ?.copyWith(color: Colors.grey)),
+                  const SizedBox(height: 6),
+                  buildInlineMath(
+                    r'二次方程 $ax^2+bx+c=0$ 的根为 $x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}$。'
+                    '\n'
+                    r'调和级数 $\sum_{n=1}^{\infty}\frac{1}{n}$ 发散，'
+                    r'但交错调和级数 $\sum_{n=1}^{\infty}\frac{(-1)^{n+1}}{n}=\ln 2$ 收敛。',
+                  ),
                 ],
               ),
             ),

@@ -10,7 +10,7 @@ import {
   View,
   useColorScheme,
 } from 'react-native';
-import {RaTeXView} from 'ratex-react-native';
+import {InlineTeX, RaTeXView} from 'ratex-react-native';
 
 const FORMULAS = [
   {name: '二次方程', latex: String.raw`\frac{-b \pm \sqrt{b^2-4ac}}{2a}`},
@@ -19,6 +19,25 @@ const FORMULAS = [
   {name: '级数', latex: String.raw`\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}`},
   {name: '矩阵', latex: String.raw`\begin{pmatrix}a & b \\ c & d\end{pmatrix}`},
   {name: 'Maxwell', latex: String.raw`\nabla \times \mathbf{B} = \mu_0 \mathbf{J}`},
+];
+
+const INLINE_EXAMPLES = [
+  {
+    name: '单行内联 — 能量',
+    content: String.raw`质能等价关系：$E = mc^2$，这是狭义相对论的核心结论。`,
+  },
+  {
+    name: '单行内联 — 勾股定理',
+    content: String.raw`对于直角三角形，三边满足 $a^2 + b^2 = c^2$，其中 c 为斜边。`,
+  },
+  {
+    name: '多行内联 — 积分',
+    content: String.raw`正态分布的归一化条件为 $\int_{-\infty}^{+\infty} \frac{1}{\sqrt{2\pi}\,\sigma} e^{-\frac{(x-\mu)^2}{2\sigma^2}} dx = 1$，其中 μ 为均值，σ 为标准差。`,
+  },
+  {
+    name: '多行内联 — 矩阵行列式',
+    content: String.raw`二阶矩阵的行列式定义为 $\det\begin{pmatrix}a & b \\ c & d\end{pmatrix} = ad - bc$，不等于零时矩阵可逆。`,
+  },
 ];
 
 export default function App() {
@@ -63,11 +82,25 @@ export default function App() {
           />
         </View>
 
+        {/* Inline formula examples */}
+        <Text style={[styles.sectionTitle, isDark && styles.textLight]}>内联公式示例</Text>
+        {INLINE_EXAMPLES.map(({name, content}) => (
+          <View key={name} style={styles.card}>
+            <Text style={[styles.label, isDark && styles.textLight]}>{name}</Text>
+            <InlineTeX
+              content={content}
+              fontSize={16}
+              textStyle={[styles.inlineText, isDark && styles.textLight]}
+            />
+          </View>
+        ))}
+
         {/* Preset formulas */}
+        <Text style={[styles.sectionTitle, isDark && styles.textLight]}>块级公式示例</Text>
         {FORMULAS.map(({name, latex}) => (
           <View key={name} style={styles.card}>
             <Text style={[styles.label, isDark && styles.textLight]}>{name}</Text>
-            <RaTeXView latex={latex} fontSize={24} style={[styles.formula]} />
+            <RaTeXView latex={latex} fontSize={24} style={styles.formula} />
           </View>
         ))}
       </ScrollView>
@@ -95,4 +128,6 @@ const styles = StyleSheet.create({
   err: {color: 'red', marginTop: 4, fontSize: 12},
   formula: {marginTop: 8, width: '100%'},
   label: {fontSize: 13, color: '#555', marginBottom: 4},
+  sectionTitle: {fontSize: 16, fontWeight: '600', color: '#333', marginTop: 4},
+  inlineText: {fontSize: 14, color: '#333'},
 });

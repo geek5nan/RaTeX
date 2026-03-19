@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="ratex_flutter_demo"
+        android:label="RaTeX Flutter Demo"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

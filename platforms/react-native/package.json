@@ -3,6 +3,7 @@
   "version": "0.0.10",
   "description": "Native LaTeX rendering for React Native (no WebView)",
   "main": "lib/index.js",
+  "react-native": "src/index.ts",
   "types": "lib/index.d.ts",
   "source": "src/index.ts",
   "files": [
@@ -28,6 +29,11 @@
     "name": "RNRaTeXSpec",
     "type": "components",
     "jsSrcsDir": "src",
+    "ios": {
+      "componentProvider": {
+        "RaTeXView": "RaTeXViewComponentView"
+      }
+    },
     "android": {
       "javaPackageName": "io.ratex"
     }

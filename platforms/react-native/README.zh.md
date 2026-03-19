@@ -11,6 +11,7 @@ React Native 原生 LaTeX 数学公式渲染库——无 WebView，无 JavaScrip
 - 测量渲染内容尺寸，便于滚动视图和动态布局
 - 提供解析失败的错误回调
 - 内置所有 KaTeX 字体，无需额外配置
+- `InlineTeX` 组件支持文字与 `$...$` 公式混排
 
 ## 环境要求
 
@@ -39,6 +40,8 @@ cd ios && pod install
 
 ## 使用方法
 
+### 块级公式
+
 ```tsx
 import { RaTeXView } from 'ratex-react-native';
 
@@ -52,6 +55,24 @@ function MathFormula() {
   );
 }
 ```
+
+### 内联公式（文字与 LaTeX 混排）
+
+```tsx
+import { InlineTeX } from 'ratex-react-native';
+
+function Paragraph() {
+  return (
+    <InlineTeX
+      content="质能等价关系 $E = mc^2$ 是狭义相对论的核心结论。"
+      fontSize={16}
+      textStyle={{ color: '#333' }}
+    />
+  );
+}
+```
+
+在 `content` 字符串中用 `$...$` 标记公式，支持一段文字中包含多个公式。
 
 ## API
 
@@ -74,6 +95,21 @@ function MathFormula() {
   <RaTeXView latex="\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}" fontSize={28} />
 </ScrollView>
 ```
+
+### `<InlineTeX />`
+
+将包含 `$...$` 标记的混合字符串渲染为内联流式布局。文字和公式片段以 flex 行排列，`alignItems: 'center'` 使公式中线与周围文字自动对齐，无需手动计算偏移量。
+
+**渲染流程：**
+
+1. 每个公式先在屏幕外（绝对定位、`opacity: 0`）通过 `onContentSizeChange` 测量其固有宽高。
+2. 所有公式测量完毕后，按实测尺寸渲染可见的 flex 行。
+
+| 属性 | 类型 | 默认值 | 说明 |
+|-----|------|--------|------|
+| `content` | `string` | — | 包含 `$...$` 标记的文字字符串（必填）。 |
+| `fontSize` | `number` | `16` | 传给每个公式渲染器的字体大小（dp）。 |
+| `textStyle` | `StyleProp<TextStyle>` | — | 应用于纯文字片段的样式。 |
 
 ## 架构支持
 

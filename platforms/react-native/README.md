@@ -11,6 +11,7 @@ Native LaTeX math rendering for React Native — no WebView, no JavaScript math 
 - Measures rendered content size for scroll and dynamic layout
 - Error callback for parse failures
 - Bundles all required KaTeX fonts — no extra setup
+- `InlineTeX` component for mixed text + `$...$` formula strings
 
 ## Requirements
 
@@ -39,6 +40,8 @@ No additional steps required. The native `.so` libraries are bundled automatical
 
 ## Usage
 
+### Block formula
+
 ```tsx
 import { RaTeXView } from 'ratex-react-native';
 
@@ -52,6 +55,24 @@ function MathFormula() {
   );
 }
 ```
+
+### Inline formula (mixed text + LaTeX)
+
+```tsx
+import { InlineTeX } from 'ratex-react-native';
+
+function Paragraph() {
+  return (
+    <InlineTeX
+      content="The energy–mass relation $E = mc^2$ is a consequence of special relativity."
+      fontSize={16}
+      textStyle={{ color: '#333' }}
+    />
+  );
+}
+```
+
+Use `$...$` delimiters anywhere inside the `content` string. Multiple formulas in one string are supported.
 
 ## API
 
@@ -74,6 +95,21 @@ function MathFormula() {
   <RaTeXView latex="\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}" fontSize={28} />
 </ScrollView>
 ```
+
+### `<InlineTeX />`
+
+Renders a mixed string of plain text and `$...$` LaTeX formulas as a single inline flow. Text and formula segments are laid out in a flex row with `alignItems: 'center'`, so the formula centerline aligns with the surrounding text automatically — no manual offset required.
+
+**Rendering pipeline:**
+
+1. Each formula is first rendered off-screen (absolutely positioned, `opacity: 0`) to measure its intrinsic width and height via `onContentSizeChange`.
+2. Once all formulas are measured, the visible flex row is rendered with each formula at its exact measured size.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `content` | `string` | — | Text string with `$...$` markers for inline LaTeX (required). |
+| `fontSize` | `number` | `16` | Font size passed to each formula renderer (dp). |
+| `textStyle` | `StyleProp<TextStyle>` | — | Style applied to plain-text segments. |
 
 ## Architecture Support
 

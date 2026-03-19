@@ -13,6 +13,9 @@ struct ContentView: View {
         ("Maxwell", #"\nabla \times \mathbf{B} = \mu_0 \mathbf{J}"#),
         ("二项式",   #"(x+y)^n = \sum_{k=0}^n \binom{n}{k} x^k y^{n-k}"#),
         ("中线符号", #"\left( \frac{a}{b} \middle| \frac{c}{d} \right)"#),
+        // 较宽公式，用于观察溢出行为
+        ("薛定谔方程", #"i\hbar\frac{\partial}{\partial t}\Psi(\mathbf{r},t) = \left[-\frac{\hbar^2}{2m}\nabla^2 + V(\mathbf{r},t)\right]\Psi(\mathbf{r},t)"#),
+        ("泰勒展开",   #"f(x) = \sum_{n=0}^{\infty}\frac{f^{(n)}(0)}{n!}x^n = f(0) + f'(0)x + \frac{f''(0)}{2!}x^2 + \frac{f'''(0)}{3!}x^3 + \cdots"#),
     ]
 
     @State private var customLatex: String = #"\frac{d}{dx}\left[\int_a^x f(t)\,dt\right] = f(x)"#
