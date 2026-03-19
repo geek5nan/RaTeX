@@ -2259,8 +2259,25 @@ fn layout_raisebox(shift: f64, body: &ParseNode, options: &LayoutOptions) -> Lay
     }
 }
 
+/// Returns true if the parse node is a single character box (atom / mathord / textord),
+/// mirroring KaTeX's `isCharacterBox` + `getBaseElem` logic.
+fn is_single_char_body(node: &ParseNode) -> bool {
+    use ratex_parser::parse_node::ParseNode as PN;
+    match node {
+        // Unwrap single-element ord-groups and styling nodes.
+        PN::OrdGroup { body, .. } if body.len() == 1 => is_single_char_body(&body[0]),
+        PN::Styling { body, .. } if body.len() == 1 => is_single_char_body(&body[0]),
+        // Bare character nodes.
+        PN::Atom { .. } | PN::MathOrd { .. } | PN::TextOrd { .. } => true,
+        _ => false,
+    }
+}
+
 /// Layout \cancel, \bcancel, \xcancel, \sout — body with strike-through line(s) overlay.
-/// Line extends beyond content (like KaTeX/fixtures) and uses ~45° diagonal for \cancel/\bcancel.
+///
+/// Matches KaTeX `enclose.ts` + `stretchy.ts` geometry:
+///   • single char  → v_pad = 0.2em, h_pad = 0   (line corner-to-corner of w × (h+d+0.4) box)
+///   • multi char   → v_pad = 0,     h_pad = 0.2em (cancel-pad: line extends 0.2em each side)
 fn layout_cancel(
     label: &str,
     body: &ParseNode,
@@ -2271,60 +2288,55 @@ fn layout_cancel(
     let w = inner.width.max(0.01);
     let h = inner.height;
     let d = inner.depth;
-    // Extend stroke beyond content on both ends (match fixtures 0074, 0146)
-    let pad = 0.14_f64;
 
+    // KaTeX padding: single character gets vertical extension, multi-char gets horizontal.
+    let single = is_single_char_body(body);
+    let v_pad = if single { 0.2 } else { 0.0 };
+    let h_pad = if single { 0.0 } else { 0.2 };
+
+    // Path coordinates: y=0 at baseline, y<0 above (height), y>0 below (depth).
+    // \cancel  = "/" diagonal: bottom-left → top-right
+    // \bcancel = "\" diagonal: top-left → bottom-right
     let commands: Vec<PathCommand> = match label {
-        "\\cancel" => {
-            // Diagonal top-right to bottom-left (~45°), extended beyond box
-            vec![
-                PathCommand::MoveTo { x: -pad, y: d + pad },
-                PathCommand::LineTo { x: w + pad, y: -h - pad },
-            ]
-        }
-        "\\bcancel" => {
-            // Diagonal top-left to bottom-right (~45°), extended beyond box
-            vec![
-                PathCommand::MoveTo { x: w + pad, y: d + pad },
-                PathCommand::LineTo { x: -pad, y: -h - pad },
-            ]
-        }
-        "\\xcancel" => {
-            // Both diagonals, extended
-            vec![
-                PathCommand::MoveTo { x: -pad, y: d + pad },
-                PathCommand::LineTo { x: w + pad, y: -h - pad },
-                PathCommand::MoveTo { x: w + pad, y: d + pad },
-                PathCommand::LineTo { x: -pad, y: -h - pad },
-            ]
-        }
+        "\\cancel" => vec![
+            PathCommand::MoveTo { x: -h_pad,     y: d + v_pad  },  // bottom-left
+            PathCommand::LineTo { x: w + h_pad,  y: -h - v_pad },  // top-right
+        ],
+        "\\bcancel" => vec![
+            PathCommand::MoveTo { x: -h_pad,     y: -h - v_pad },  // top-left
+            PathCommand::LineTo { x: w + h_pad,  y: d + v_pad  },  // bottom-right
+        ],
+        "\\xcancel" => vec![
+            PathCommand::MoveTo { x: -h_pad,     y: d + v_pad  },
+            PathCommand::LineTo { x: w + h_pad,  y: -h - v_pad },
+            PathCommand::MoveTo { x: -h_pad,     y: -h - v_pad },
+            PathCommand::LineTo { x: w + h_pad,  y: d + v_pad  },
+        ],
         "\\sout" => {
-            // Horizontal line through vertical center, extended
-            let mid_y = (d - h) * 0.5_f64;
+            // Horizontal line at –0.5× x-height, extended to content edges.
+            let mid_y = -0.5 * options.metrics().x_height;
             vec![
-                PathCommand::MoveTo { x: -pad, y: mid_y },
-                PathCommand::LineTo { x: w + pad, y: mid_y },
+                PathCommand::MoveTo { x: 0.0, y: mid_y },
+                PathCommand::LineTo { x: w,   y: mid_y },
             ]
         }
         _ => vec![],
     };
 
-    let line_w = w + 2.0 * pad;
-    let line_h = h + pad;
-    let line_d = d + pad;
+    let line_w = w + 2.0 * h_pad;
+    let line_h = h + v_pad;
+    let line_d = d + v_pad;
     let line_box = LayoutBox {
         width: line_w,
         height: line_h,
         depth: line_d,
-        content: BoxContent::SvgPath {
-            commands,
-            fill: false,
-        },
+        content: BoxContent::SvgPath { commands, fill: false },
         color: options.color,
     };
 
-    // Draw line first (behind), then body on top. Line box is wider so stroke extends past content.
-    let body_shifted = make_hbox(vec![LayoutBox::new_kern(-line_w), inner]);
+    // For multi-char the body is inset by h_pad from the line-box's left edge.
+    let body_kern = -(line_w - h_pad);
+    let body_shifted = make_hbox(vec![LayoutBox::new_kern(body_kern), inner]);
     LayoutBox {
         width: w,
         height: h,
