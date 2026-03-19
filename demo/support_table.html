@@ -93,12 +93,15 @@
     .td-idx    { width: 40px; color: var(--muted); font-size: 11px; text-align: right; padding-right: 4px; }
     .td-source { width: 240px; font-family: "SFMono-Regular", Consolas, Menlo, monospace;
                  font-size: 11px; color: var(--muted); word-break: break-all; }
-    .td-katex  { width: 190px; }
-    .td-ratex  { width: 190px; }
+    /* align / equation numbers use .tag { position:absolute; right:0 } — need enough
+       horizontal room; a ~190px cap makes (1)(2) sit on top of the math. */
+    .td-katex  { min-width: 280px; width: 26%; }
+    .td-ratex  { min-width: 280px; width: 26%; }
     .td-score  { width: 110px; text-align: center; }
 
-    .katex-cell, .ratex-cell { min-height: 28px; display: flex; align-items: center; }
-    .katex-cell { overflow: hidden; max-width: 190px; }
+    .katex-cell, .ratex-cell { min-height: 28px; }
+    .ratex-cell { display: flex; align-items: center; }
+    .katex-cell { display: block; overflow-x: auto; overflow-y: visible; }
     /* KaTeX applies font-size:1.21em internally; set container so 1.21em = 20px (RaTeX em) */
     .katex-cell { font-size: 16.53px; }
     .ratex-cell canvas { max-width: 100%; }
@@ -136,8 +139,8 @@
     }
     @media (max-width: 600px) {
       .td-source { display: none; }
-      .td-katex, .td-ratex { width: auto; }
-      .katex-cell { max-width: 30vw; }
+      .td-katex, .td-ratex { width: auto; min-width: 0; }
+      .katex-cell { max-width: none; }
       .td-score { width: 70px; }
       .score-badge { min-width: 44px; padding: 2px 6px; font-size: 11px; }
       .score-badge .sub { display: none; }
@@ -450,8 +453,10 @@ function buildTable() {
     const tdK = document.createElement('td'); tdK.className = 'td-katex';
     const kc  = document.createElement('div'); kc.className = 'katex-cell';
     try {
+      // displayMode: true — required for AMS environments (align, equation, gather, …)
+      // and matches tools/golden_compare/generate_reference.mjs (golden PNG reference).
       kc.innerHTML = katex.renderToString(latex, {
-        throwOnError: false, displayMode: false, trust: true, strict: false
+        throwOnError: false, displayMode: true, trust: true, strict: false
       });
     } catch(e) {
       kc.innerHTML = '<span style="color:var(--red);font-size:11px">KaTeX error</span>';

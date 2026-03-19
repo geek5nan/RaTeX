@@ -2313,58 +2313,67 @@ fn layout_cancel(
 }
 
 /// Layout \phase{body} — angle notation: body with a diagonal angle mark + underline.
-/// KaTeX SVG path: M400000 855 H0 L427.5 0 l65 45 L145 775 H400000z
+/// Matches KaTeX `enclose.ts` + `phasePath(y)` (steinmetz): dynamic viewBox height, `x = y/2` at the peak.
 fn layout_phase(body: &ParseNode, options: &LayoutOptions) -> LayoutBox {
     use crate::layout_box::BoxContent;
+    let metrics = options.metrics();
     let inner = layout_node(body, options);
-    // KaTeX: left padding = 0.4876em, height = 0.6444em, depth = 0.2108em
-    let left_pad = 0.4876_f64;
-    let total_h = 0.6444_f64;
-    let total_d = 0.2108_f64;
+    // KaTeX: lineWeight = 0.6pt, clearance = 0.35ex; angleHeight = inner.h + inner.d + both
+    let line_weight = 0.6_f64 / metrics.pt_per_em;
+    let clearance = 0.35_f64 * metrics.x_height;
+    let angle_height = inner.height + inner.depth + line_weight + clearance;
+    let left_pad = angle_height / 2.0 + line_weight;
     let width = inner.width + left_pad;
 
-    // Convert KaTeX SVG path (viewBox 400000x855) to em coords.
-    // SVG uses y-down; our coords: y=0 is baseline, positive=down, negative=up.
-    // Horizontal scale: total_width / 400 (SVG width is 400em)
-    // Vertical: y_svg=0 → -total_h, y_svg=855 → +total_d
-    //   scale_y = (total_h + total_d) / 855
-    let scale_x = width / 400.0;
-    let sy = (total_h + total_d) / 855.0;
-    let vy = |y_svg: f64| -> f64 { y_svg * sy - total_h };
+    // KaTeX: viewBoxHeight = floor(1000 * angleHeight * scale); base sizing uses scale → 1 here.
+    let y_svg = (1000.0 * angle_height).floor().max(80.0);
 
-    // Points from KaTeX path:
-    // M400000 855 = right-bottom
-    // H0 → (0, 855) = left-bottom
-    // L427.5 0 = (427.5, 0) = left-upper diagonal peak
-    // l65 45 = (492.5, 45) = slight right/down
-    // L145 775 = (145, 775) = return down-right
-    // H400000 = right at y=775
-    // z = close
+    // Vertical: viewBox height y_svg → angle_height em (baseline mapping below).
+    let sy = angle_height / y_svg;
+    // Horizontal: KaTeX SVG uses preserveAspectRatio xMinYMin slice — scale follows viewBox height,
+    // so x grows ~sy per SVG unit (not width/400000). That keeps the left angle visible; clip to `width`.
+    let sx = sy;
+    let right_x = (400_000.0_f64 * sx).min(width);
+
+    // Baseline: peak at svg y=0 → -inner.height; bottom at y=y_svg → inner.depth + line_weight + clearance
+    let bottom_y = inner.depth + line_weight + clearance;
+    let vy = |y_sv: f64| -> f64 { bottom_y - (y_svg - y_sv) * sy };
+
+    // phasePath(y): M400000 y H0 L y/2 0 l65 45 L145 y-80 H400000z
+    let x_peak = y_svg / 2.0;
     let commands = vec![
-        PathCommand::MoveTo { x: 400000.0 * scale_x, y: vy(855.0) },
-        PathCommand::LineTo { x: 0.0,              y: vy(855.0) },
-        PathCommand::LineTo { x: 427.5 * scale_x,  y: vy(0.0)   },
-        PathCommand::LineTo { x: 492.5 * scale_x,  y: vy(45.0)  },
-        PathCommand::LineTo { x: 145.0 * scale_x,  y: vy(775.0) },
-        PathCommand::LineTo { x: 400000.0 * scale_x, y: vy(775.0) },
+        PathCommand::MoveTo { x: right_x, y: vy(y_svg) },
+        PathCommand::LineTo { x: 0.0, y: vy(y_svg) },
+        PathCommand::LineTo { x: x_peak * sx, y: vy(0.0) },
+        PathCommand::LineTo { x: (x_peak + 65.0) * sx, y: vy(45.0) },
+        PathCommand::LineTo {
+            x: 145.0 * sx,
+            y: vy(y_svg - 80.0),
+        },
+        PathCommand::LineTo {
+            x: right_x,
+            y: vy(y_svg - 80.0),
+        },
         PathCommand::Close,
     ];
 
-    // Body is overlaid at x=left_pad from the left
     let body_shifted = make_hbox(vec![
         LayoutBox::new_kern(left_pad),
         inner.clone(),
     ]);
 
+    let path_height = inner.height;
+    let path_depth = bottom_y;
+
     LayoutBox {
         width,
-        height: total_h,
-        depth: total_d,
+        height: path_height,
+        depth: path_depth,
         content: BoxContent::HBox(vec![
             LayoutBox {
                 width,
-                height: total_h,
-                depth: total_d,
+                height: path_height,
+                depth: path_depth,
                 content: BoxContent::SvgPath { commands, fill: true },
                 color: options.color,
             },
