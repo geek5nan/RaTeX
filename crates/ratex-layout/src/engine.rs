@@ -464,6 +464,36 @@ fn layout_node(node: &ParseNode, options: &LayoutOptions) -> LayoutBox {
 // Symbol layout
 // ============================================================================
 
+/// Advance width for glyphs missing from bundled KaTeX fonts (e.g. CJK in `\text{…}`).
+///
+/// The placeholder width must match what system font fallback draws at ~1em: using 0.5em
+/// collapses.advance and Core Text / platform rasterizers still paint a full-width ideograph,
+/// so neighbors overlap and the row looks "too large" / clipped.
+fn missing_glyph_width_em(ch: char) -> f64 {
+    match ch as u32 {
+        // Hiragana / Katakana
+        0x3040..=0x30FF | 0x31F0..=0x31FF => 1.0,
+        // CJK Unified + extension / compatibility ideographs
+        0x3400..=0x4DBF | 0x4E00..=0x9FFF | 0xF900..=0xFAFF => 1.0,
+        // Hangul syllables
+        0xAC00..=0xD7AF => 1.0,
+        // Fullwidth ASCII, punctuation, currency
+        0xFF01..=0xFF60 | 0xFFE0..=0xFFEE => 1.0,
+        _ => 0.5,
+    }
+}
+
+fn missing_glyph_metrics_fallback(ch: char, options: &LayoutOptions) -> (f64, f64, f64) {
+    let m = get_global_metrics(options.style.size_index());
+    let w = missing_glyph_width_em(ch);
+    if w >= 0.99 {
+        let h = (m.quad * 0.92).max(m.x_height);
+        (w, h, 0.0)
+    } else {
+        (w, m.x_height, 0.0)
+    }
+}
+
 fn layout_symbol(text: &str, mode: Mode, options: &LayoutOptions) -> LayoutBox {
     let ch = resolve_symbol_char(text, mode);
     let mut font_id = select_font(text, ch, mode, options);
@@ -480,10 +510,7 @@ fn layout_symbol(text: &str, mode: Mode, options: &LayoutOptions) -> LayoutBox {
 
     let (width, height, depth) = match metrics {
         Some(m) => (m.width, m.height, m.depth),
-        None => {
-            let m = get_global_metrics(options.style.size_index());
-            (0.5, m.x_height, 0.0)
-        }
+        None => missing_glyph_metrics_fallback(ch, options),
     };
 
     LayoutBox {
@@ -2106,7 +2133,7 @@ fn layout_text(body: &[ParseNode], options: &LayoutOptions) -> LayoutBox {
                 let m = get_char_metrics(FontId::MainRegular, char_code);
                 let (w, h, d) = match m {
                     Some(m) => (m.width, m.height, m.depth),
-                    None => (0.5, 0.43, 0.0),
+                    None => missing_glyph_metrics_fallback(ch, options),
                 };
                 children.push(LayoutBox {
                     width: w,
