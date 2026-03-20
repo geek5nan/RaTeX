@@ -433,8 +433,21 @@ fn pu_enumber(ctx: &ParserCtx, m: &MatchToken) -> MhchemResult<Vec<Value>> {
                 }
             }
         }
-        let mut mult = parts.get(4).or_else(|| parts.get(3)).cloned().unwrap_or_default();
-        mult = mult.trim().to_string();
+        // Regex group 5 = `*` / `×` branch; group 4 = `e`/`E` or `\s*...\s*10\^`. When `e` matches,
+        // group 5 is present as empty string — `Some("")` so `.or_else(|| g4)` must not be used;
+        // pick non-empty branch like KaTeX `m[5] || m[4]`.
+        let g_star = parts.get(4).cloned().unwrap_or_default();
+        let g_e_or_times = parts.get(3).cloned().unwrap_or_default();
+        let mult = {
+            let a = g_star.trim();
+            let b = g_e_or_times.trim();
+            if !a.is_empty() {
+                a.to_string()
+            } else {
+                b.to_string()
+            }
+        };
+        // KaTeX mhchem: lowercase `e` → \\cdot, uppercase `E` → \\times (see golden 0100/0101 vs 0102/0103).
         if !mult.is_empty() {
             if mult == "e" || mult.starts_with('*') {
                 ret.push(json!({"type_": "cdot"}));
@@ -443,7 +456,7 @@ fn pu_enumber(ctx: &ParserCtx, m: &MatchToken) -> MhchemResult<Vec<Value>> {
             }
         }
     }
-    if let Some(exp) = parts.get(6).filter(|s| !s.is_empty()).or_else(|| parts.get(5).filter(|s| !s.is_empty())) {
+    if let Some(exp) = parts.get(5).filter(|s| !s.is_empty()) {
         ret.push(Value::String(format!("10^{{{exp}}}")));
     }
     Ok(ret)

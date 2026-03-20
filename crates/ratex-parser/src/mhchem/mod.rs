@@ -92,4 +92,29 @@ mod tests {
         assert!(!t.is_empty());
     }
 
+    #[test]
+    fn pu_scientific_lowercase_e_cdot_uppercase_e_times() {
+        for src in ["1.2e3 kJ", "1,2e3 kJ"] {
+            let t = chem_parse_str(src, "pu").expect("mhchem");
+            assert!(
+                t.contains("\\cdot") && t.contains("10^{3}") && !t.contains("\\times"),
+                "expected \\cdot for lowercase e: {src:?} → {t:?}"
+            );
+        }
+        for src in ["1.2E3 kJ", "1,2E3 kJ"] {
+            let t = chem_parse_str(src, "pu").expect("mhchem");
+            assert!(
+                t.contains("\\times") && t.contains("10^{3}") && !t.contains("\\cdot"),
+                "expected \\times for uppercase E: {src:?} → {t:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn dollar_underset_inner_ce_tex_is_valid_latex() {
+        let inner = r"$\underset{\mathrm{red}}{\ce{HgI2}}$";
+        let tex = chem_parse_str(inner, "ce").expect("mhchem");
+        crate::parser::parse(&tex).expect("mhchem TeX should parse");
+    }
+
 }

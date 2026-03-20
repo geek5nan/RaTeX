@@ -303,17 +303,17 @@ pub fn match_pattern(data: &MhchemData, pattern_name: &str, input: &str) -> Mhch
             input,
             "^",
             Beg::Re(&RE_CMD_BRACE),
-            "",
-            End::Str("}"),
-            Some(("", Beg::Str("{"), "", End::Str("}"))),
+            "}",
+            End::Str(""),
+            Some(("", Beg::Str("{"), "}", End::Str(""))),
             true,
         ),
         "^\\x{}" => find_observe_groups(
             input,
             "^",
             Beg::Re(&RE_CMD_BRACE),
-            "",
-            End::Str("}"),
+            "}",
+            End::Str(""),
             None,
             false,
         ),
@@ -323,17 +323,17 @@ pub fn match_pattern(data: &MhchemData, pattern_name: &str, input: &str) -> Mhch
             input,
             "_",
             Beg::Re(&RE_CMD_BRACE),
-            "",
-            End::Str("}"),
-            Some(("", Beg::Str("{"), "", End::Str("}"))),
+            "}",
+            End::Str(""),
+            Some(("", Beg::Str("{"), "}", End::Str(""))),
             true,
         ),
         "_\\x{}" => find_observe_groups(
             input,
             "_",
             Beg::Re(&RE_CMD_BRACE),
-            "",
-            End::Str("}"),
+            "}",
+            End::Str(""),
             None,
             false,
         ),
@@ -348,17 +348,17 @@ pub fn match_pattern(data: &MhchemData, pattern_name: &str, input: &str) -> Mhch
             input,
             "",
             Beg::Re(&RE_CMD_BRACE),
-            "",
-            End::Str("}"),
-            Some(("", Beg::Str("{"), "", End::Str("}"))),
+            "}",
+            End::Str(""),
+            Some(("", Beg::Str("{"), "}", End::Str(""))),
             true,
         ),
         "\\x{}" => find_observe_groups(
             input,
             "",
             Beg::Re(&RE_CMD_BRACE),
-            "",
-            End::Str("}"),
+            "}",
+            End::Str(""),
             None,
             false,
         ),
@@ -435,5 +435,45 @@ pub fn match_pattern(data: &MhchemData, pattern_name: &str, input: &str) -> Mhch
                 remainder: input[n..].to_string(),
             }))
         }
+    }
+}
+
+#[cfg(test)]
+mod fog_tests {
+    use super::{find_observe_groups, match_pattern, Beg, End, MatchToken};
+
+    #[test]
+    fn x_double_brace_second_group_includes_nested_ce_close() {
+        use crate::mhchem::data::data;
+        let input = r"\underset{\mathrm{red}}{\ce{HgI2}}";
+        let hit = match_pattern(data(), r"\x{}{}", input)
+            .unwrap()
+            .unwrap();
+        let MatchToken::S(s) = hit.token else {
+            panic!("expected combined S");
+        };
+        assert_eq!(s, r"\underset{\mathrm{red}}{\ce{HgI2}}");
+        assert!(hit.remainder.is_empty());
+    }
+
+    #[test]
+    fn underset_splits_nested_mathrm() {
+        let input = r"\underset{\mathrm{red}}{\ce{HgI2}}";
+        let hit = find_observe_groups(
+            input,
+            "\\underset{",
+            Beg::Str(""),
+            "",
+            End::Str("}"),
+            Some(("{", Beg::Str(""), "", End::Str("}"))),
+            false,
+        )
+        .unwrap()
+        .unwrap();
+        let MatchToken::A(parts) = hit.token else {
+            panic!("expected pair");
+        };
+        assert_eq!(parts[0], r"\mathrm{red}");
+        assert_eq!(parts[1], r"\ce{HgI2}");
     }
 }
