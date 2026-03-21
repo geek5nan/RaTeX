@@ -7,7 +7,9 @@
  * Usage:
  *   node generate_reference.mjs [test_cases.txt] [fixtures_dir] [--mhchem]
  *
- * --mhchem: load contrib/mhchem (for tests/golden/test_case_ce.txt → fixtures_ce).
+ * --mhchem: use 40px font (for tests/golden/test_case_ce.txt → fixtures_ce).
+ * mhchem (\\ce, \\pu, …) is loaded after KaTeX via Puppeteer addScriptTag so file://
+ * reference runs always register macros; do not rely on a second <script src="contrib/…"> alone.
  * KaTeX dist is resolved from tools/golden_compare/node_modules or tools/lexer_compare/node_modules.
  */
 import { readFileSync, writeFileSync, unlinkSync, mkdirSync, existsSync } from 'fs';
@@ -23,10 +25,15 @@ function resolveKatexDist() {
         join(__dirname, '..', 'lexer_compare', 'node_modules', 'katex', 'dist'),
     ];
     for (const c of candidates) {
-        if (existsSync(join(c, 'katex.min.js'))) return c;
+        const katexJs = join(c, 'katex.min.js');
+        const mhchemJs = join(c, 'contrib', 'mhchem.min.js');
+        if (existsSync(katexJs) && existsSync(mhchemJs)) {
+            return c;
+        }
     }
     throw new Error(
-        'KaTeX dist not found. Run: (cd tools/golden_compare && npm install) or npm install under tools/lexer_compare'
+        'KaTeX dist not found or missing contrib/mhchem.min.js (required for \\ce and \\pu). ' +
+            'Run: (cd tools/golden_compare && npm install) or npm install under tools/lexer_compare'
     );
 }
 
@@ -41,9 +48,6 @@ async function main() {
 
     const KATEX_DIST = resolveKatexDist();
     const fontPx = withMhchem ? 40 : 20;
-    const mhchemScript = withMhchem
-        ? '<script src="contrib/mhchem.min.js"></script>'
-        : '';
 
     if (!existsSync(outputDir)) {
         mkdirSync(outputDir, { recursive: true });
@@ -54,7 +58,7 @@ async function main() {
         .filter(l => l.trim() && !l.trim().startsWith('#'));
 
     console.log(
-        `Generating ${lines.length} reference PNGs (KaTeX${withMhchem ? ' + mhchem' : ''}, ${fontPx}px)...`
+        `Generating ${lines.length} reference PNGs (KaTeX + mhchem, ${fontPx}px)...`
     );
 
     // Write temp HTML in KaTeX dist dir so relative font paths resolve correctly
@@ -72,7 +76,6 @@ body { margin: 0; padding: 0; background: white; }
 }
 </style>
 <script src="katex.min.js"></script>
-${mhchemScript}
 </head>
 <body>
 <div id="formula"></div>
@@ -90,6 +93,12 @@ ${mhchemScript}
 
     // Navigate to file URL — CSS relative paths (fonts/...) resolve from KaTeX dist dir
     await page.goto(pathToFileURL(tempHtml).href, { waitUntil: 'networkidle0' });
+
+    // Load mhchem after KaTeX (defines \\ce, \\pu, …). Using addScriptTag avoids file:// edge
+    // cases where a relative contrib/ script may not run before the first render.
+    await page.addScriptTag({
+        path: join(KATEX_DIST, 'contrib', 'mhchem.min.js'),
+    });
 
     let ok = 0;
     let errors = 0;
