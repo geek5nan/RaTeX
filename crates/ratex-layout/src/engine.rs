@@ -202,7 +202,7 @@ fn layout_node(node: &ParseNode, options: &LayoutOptions) -> LayoutBox {
             let has_right = right_delim.as_ref().is_some_and(|d| !d.is_empty() && d != ".");
 
             if has_left || has_right {
-                let total_h = frac.height + frac.depth;
+                let total_h = genfrac_delim_target_height(options);
                 let left_d = left_delim.as_deref().unwrap_or(".");
                 let right_d = right_delim.as_deref().unwrap_or(".");
                 let left_box = make_stretchy_delim(left_d, total_h, options);
@@ -1690,6 +1690,37 @@ fn body_contains_middle(nodes: &[ParseNode]) -> bool {
     nodes.iter().any(node_contains_middle)
 }
 
+/// KaTeX genfrac HTML Rule 15e: `\binom`, `\brace`, `\brack`, `\atop` use `delim1`/`delim2`
+/// from font metrics, not the `\left`/`\right` height formula (`makeLeftRightDelim` vs genfrac).
+fn genfrac_delim_target_height(options: &LayoutOptions) -> f64 {
+    let m = options.metrics();
+    if options.style.is_display() {
+        m.delim1
+    } else if matches!(
+        options.style,
+        MathStyle::ScriptScript | MathStyle::ScriptScriptCramped
+    ) {
+        options
+            .with_style(MathStyle::Script)
+            .metrics()
+            .delim2
+    } else {
+        m.delim2
+    }
+}
+
+/// Required total height for `\left`/`\right` stretchy delimiters (TeX `\sigma_4` rule).
+fn left_right_delim_total_height(inner: &LayoutBox, options: &LayoutOptions) -> f64 {
+    let metrics = options.metrics();
+    let inner_height = inner.height;
+    let inner_depth = inner.depth;
+    let axis = metrics.axis_height;
+    let max_dist = (inner_height - axis).max(inner_depth + axis);
+    let delim_factor = 901.0;
+    let delim_extend = 5.0 / metrics.pt_per_em;
+    (max_dist / 500.0 * delim_factor).max(2.0 * max_dist - delim_extend)
+}
+
 fn layout_left_right(
     body: &[ParseNode],
     left_delim: &str,
@@ -1703,15 +1734,7 @@ fn layout_left_right(
             ..options.clone()
         };
         let inner_first = layout_expression(body, &opts_first, true);
-        let metrics = options.metrics();
-        let inner_height = inner_first.height;
-        let inner_depth = inner_first.depth;
-        let axis = metrics.axis_height;
-        let max_dist = (inner_height - axis).max(inner_depth + axis);
-        let delim_factor = 901.0;
-        let delim_extend = 5.0 / metrics.pt_per_em;
-        let total_height =
-            (max_dist / 500.0 * delim_factor).max(2.0 * max_dist - delim_extend);
+        let total_height = left_right_delim_total_height(&inner_first, options);
         // Second pass: layout with total_height so \middle stretches to match \left and \right.
         let opts_second = LayoutOptions {
             leftright_delim_height: Some(total_height),
@@ -1721,15 +1744,7 @@ fn layout_left_right(
         (inner_second, total_height)
     } else {
         let inner = layout_expression(body, options, true);
-        let metrics = options.metrics();
-        let inner_height = inner.height;
-        let inner_depth = inner.depth;
-        let axis = metrics.axis_height;
-        let max_dist = (inner_height - axis).max(inner_depth + axis);
-        let delim_factor = 901.0;
-        let delim_extend = 5.0 / metrics.pt_per_em;
-        let total_height =
-            (max_dist / 500.0 * delim_factor).max(2.0 * max_dist - delim_extend);
+        let total_height = left_right_delim_total_height(&inner, options);
         (inner, total_height)
     };
 
