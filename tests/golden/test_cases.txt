@@ -939,3 +939,16 @@ R^{\mu}{}_{{\nu\rho\sigma}}
 T^{\mu\nu}{}_{\rho} = g^{\mu\alpha}g^{\nu\beta}T_{\alpha\beta\rho}
 \Gamma^{\mu}_{\nu\rho} = \tfrac{1}{2}g^{\mu\sigma}\!\left(\partial_\nu g_{\rho\sigma}+\partial_\rho g_{\nu\sigma}-\partial_\sigma g_{\nu\rho}\right)
 \nabla_\mu T^{\mu\nu} = 0
+\exp\Bigl(\tfrac{x+y}{1+x^2}\Bigr)
+f^{(n)}(x) = \dfrac{\mathrm{d}^n f}{\mathrm{d}x^n}
+\frac{\partial^2 u}{\partial x \partial y}
+\begin{matrix} \hline a & b \\ c & d \end{matrix}
+\displaystyle\binom{k}{p}\binom{n-k}{r-p}
+\bigl\{\begin{smallmatrix} 1&2\\3&4 \end{smallmatrix}\bigr\}
+\operatorname{supp} f \cap \operatorname{supp} g
+\mathring{U} \subseteq \overline{V}
+\acute{\mathbb{A}}
+\check{\mathscr{D}}
+\tilde{\mathrm{e}}^{\mathrm{i}\pi}+1=0
+\utilde{EF} + \widehat{GH}
+\begin{array}{|c|c|} \hline 1 & 2 \\ \hline 3 & 4 \\ \hline \end{array}

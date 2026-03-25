@@ -81,6 +81,7 @@ pub fn render_to_png(
                 width,
                 thickness,
                 color,
+                dashed,
             } => {
                 render_line(
                     &mut pixmap,
@@ -89,6 +90,7 @@ pub fn render_to_png(
                     *width as f32 * em_px,
                     *thickness as f32 * em_px,
                     color,
+                    *dashed,
                 );
             }
             DisplayItem::Rect {
@@ -326,22 +328,44 @@ fn render_glyph_with_font(
     }
 }
 
-fn render_line(pixmap: &mut Pixmap, x: f32, y: f32, width: f32, thickness: f32, color: &Color) {
+fn render_line(pixmap: &mut Pixmap, x: f32, y: f32, width: f32, thickness: f32, color: &Color, dashed: bool) {
     let t = thickness.max(1.0);
-    let rect = tiny_skia::Rect::from_xywh(x, y - t / 2.0, width, t);
-    if let Some(rect) = rect {
-        let mut paint = Paint::default();
-        paint.set_color_rgba8(
-            (color.r * 255.0) as u8,
-            (color.g * 255.0) as u8,
-            (color.b * 255.0) as u8,
-            255,
-        );
-        pixmap.fill_rect(rect, &paint, Transform::identity(), None);
+    let mut paint = Paint::default();
+    paint.set_color_rgba8(
+        (color.r * 255.0) as u8,
+        (color.g * 255.0) as u8,
+        (color.b * 255.0) as u8,
+        255,
+    );
+
+    if dashed {
+        // Draw a dashed line: dash length = 4t, gap = 4t.
+        let dash_len = (4.0 * t).max(2.0);
+        let gap_len = (4.0 * t).max(2.0);
+        let period = dash_len + gap_len;
+        let top = y - t / 2.0;
+        let mut cur_x = x;
+        while cur_x < x + width {
+            let seg_width = (dash_len).min(x + width - cur_x);
+            let seg_width = seg_width.max(2.0);
+            if let Some(rect) = tiny_skia::Rect::from_xywh(cur_x, top, seg_width, t) {
+                pixmap.fill_rect(rect, &paint, Transform::identity(), None);
+            }
+            cur_x += period;
+        }
+    } else {
+        if let Some(rect) = tiny_skia::Rect::from_xywh(x, y - t / 2.0, width, t) {
+            pixmap.fill_rect(rect, &paint, Transform::identity(), None);
+        }
     }
 }
 
 fn render_rect(pixmap: &mut Pixmap, x: f32, y: f32, width: f32, height: f32, color: &Color) {
+    // Clamp to at least 2px: with width=1px at a fractional pixel position, fill_dot8's
+    // dot-8 fixed-point arithmetic can produce inner_width=0 and trigger a debug_assert.
+    // 2px guarantees at least 1 full interior pixel regardless of sub-pixel alignment.
+    let width = width.max(2.0);
+    let height = height.max(2.0);
     let rect = tiny_skia::Rect::from_xywh(x, y, width, height);
     if let Some(rect) = rect {
         let mut paint = Paint::default();

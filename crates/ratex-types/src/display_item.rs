@@ -38,6 +38,9 @@ pub enum DisplayItem {
         width: f64,
         thickness: f64,
         color: Color,
+        /// If true, render as a dashed line (for \hdashline).
+        #[serde(default)]
+        dashed: bool,
     },
     /// Draw a filled rectangle (\colorbox backgrounds).
     Rect {
@@ -100,6 +103,7 @@ mod tests {
                     width: 10.0,
                     thickness: 0.04,
                     color: Color::BLACK,
+                    dashed: false,
                 },
                 DisplayItem::Rect {
                     x: 0.0,

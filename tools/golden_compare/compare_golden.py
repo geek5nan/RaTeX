@@ -10,6 +10,7 @@ Uses ink-coverage-based comparison instead of raw pixel diff:
 Usage:
     python3 compare_golden.py [--fixtures DIR] [--output DIR] [--threshold FLOAT]
     python3 compare_golden.py --ce   # mhchem: fixtures_ce vs output_ce, test_case_ce.txt
+    python3 compare_golden.py --diff-dir DIR --diff-from 942   # save ref|test|diff for case NNNN >= 942
 """
 import argparse
 import os
@@ -179,6 +180,20 @@ def main():
     parser.add_argument("--output", default=None)
     parser.add_argument("--threshold", type=float, default=0.30, help="Combined score threshold to pass")
     parser.add_argument("--diff-dir", default=None)
+    parser.add_argument(
+        "--diff-from",
+        type=int,
+        default=None,
+        metavar="N",
+        help="With --diff-dir: write diff PNG for every case whose 1-based index is >= N (not only failures)",
+    )
+    parser.add_argument(
+        "--diff-to",
+        type=int,
+        default=None,
+        metavar="N",
+        help="With --diff-from: optional upper bound (inclusive) on 1-based case index",
+    )
     parser.add_argument("--test-cases", default=None)
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
@@ -239,8 +254,16 @@ def main():
         scores.append(stats["score"])
         results.append((name, formula, stats, is_pass))
 
-        if args.diff_dir and not is_pass:
-            save_diff_image(ref_img, test_img, os.path.join(args.diff_dir, f"{name}_diff.png"))
+        if args.diff_dir:
+            case_no = int(name)
+            if args.diff_from is not None:
+                in_range = case_no >= args.diff_from
+                if args.diff_to is not None:
+                    in_range = in_range and case_no <= args.diff_to
+                if in_range:
+                    save_diff_image(ref_img, test_img, os.path.join(args.diff_dir, f"{name}_diff.png"))
+            elif not is_pass:
+                save_diff_image(ref_img, test_img, os.path.join(args.diff_dir, f"{name}_diff.png"))
 
     total = passed + failed
     pass_rate = passed / total * 100 if total > 0 else 0
