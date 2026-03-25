@@ -132,6 +132,8 @@ pub enum BoxContent {
         hlines_before_row: Vec<Vec<bool>>,
         /// Thickness of array rules in em.
         rule_thickness: f64,
+        /// Gap between consecutive \hline or \hdashline rules (= \doublerulesep, in em).
+        double_rule_sep: f64,
     },
 
     /// An SVG-style path (arrows, braces, etc.).

@@ -2112,6 +2112,7 @@ fn layout_array(
     };
 
     let rule_thickness = 0.4 * pt;
+    let double_rule_sep = metrics.double_rule_sep;
 
     // Layout all cells
     let mut cell_boxes: Vec<Vec<LayoutBox>> = Vec::with_capacity(num_rows);
@@ -2164,7 +2165,32 @@ fn layout_array(
         }
     }
 
-    // Total height and offset
+    // Ensure hlines_before_row has num_rows + 1 entries.
+    let mut hlines_before_row: Vec<Vec<bool>> = hlines.to_vec();
+    while hlines_before_row.len() < num_rows + 1 {
+        hlines_before_row.push(vec![]);
+    }
+
+    // For n > 1 consecutive hlines before row r, add extra vertical space so the
+    // lines don't overlap with content.  Each extra line needs (rule_thickness +
+    // double_rule_sep) of room.
+    //   - r == 0: extra hlines appear above the first row → add to row_heights[0].
+    //   - r >= 1: extra hlines appear in the gap above row r → add to row_depths[r-1].
+    for r in 0..=num_rows {
+        let n = hlines_before_row[r].len();
+        if n > 1 {
+            let extra = (n - 1) as f64 * (rule_thickness + double_rule_sep);
+            if r == 0 {
+                if num_rows > 0 {
+                    row_heights[0] += extra;
+                }
+            } else {
+                row_depths[r - 1] += extra;
+            }
+        }
+    }
+
+    // Total height and offset (computed after extra hline spacing is applied).
     let mut total_height = 0.0;
     let mut row_positions = Vec::with_capacity(num_rows);
     for r in 0..num_rows {
@@ -2186,12 +2212,6 @@ fn layout_array(
     let height = offset;
     let depth = total_height - offset;
 
-    // Ensure hlines_before_row has num_rows + 1 entries.
-    let mut hlines_before_row: Vec<Vec<bool>> = hlines.to_vec();
-    while hlines_before_row.len() < num_rows + 1 {
-        hlines_before_row.push(vec![]);
-    }
-
     LayoutBox {
         width: total_width,
         height,
@@ -2208,6 +2228,7 @@ fn layout_array(
             col_separators,
             hlines_before_row,
             rule_thickness,
+            double_rule_sep,
         },
         color: options.color,
     }

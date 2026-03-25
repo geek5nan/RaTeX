@@ -136,6 +136,7 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
                 width: lbox.width * scale,
                 thickness: thickness * scale,
                 color: lbox.color,
+                dashed: false,
             });
         }
 
@@ -165,6 +166,7 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
                     width: lbox.width * scale,
                     thickness: bar_thickness * scale,
                     color: lbox.color,
+                    dashed: false,
                 });
             }
         }
@@ -267,6 +269,7 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
                 width: body.width * scale,
                 thickness: rule_thickness * scale,
                 color: lbox.color,
+                dashed: false,
             });
 
             emit_box(body, surd_x + radical_width * scale, y, scale, items);
@@ -353,6 +356,7 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
             col_separators,
             hlines_before_row,
             rule_thickness,
+            double_rule_sep,
         } => {
             let y_top = y - offset * scale;
             let array_total_height = (lbox.height + lbox.depth) * scale;
@@ -368,15 +372,32 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
             }
 
             // Draw horizontal lines (hlines) before/after each row.
+            // Each entry in hlines vec is one \hline (false) or \hdashline (true).
+            // Consecutive rules are separated by double_rule_sep (= \doublerulesep = 2pt).
+            //
+            // Extra space for n > 1 hlines was already added to the layout:
+            //   - r == 0: added to row_heights[0], so lines start at boundary_ys[0] going down.
+            //   - r >= 1: added to row_depths[r-1], so lines occupy the range
+            //             [boundary_ys[r] - (n-1)*rule_step, boundary_ys[r]], above row r.
+            let rule_step = line_thickness + double_rule_sep * scale;
             for (r, hlines) in hlines_before_row.iter().enumerate() {
-                if r < boundary_ys.len() && !hlines.is_empty() {
-                    items.push(DisplayItem::Line {
-                        x,
-                        y: boundary_ys[r],
-                        width: lbox.width * scale,
-                        thickness: line_thickness,
-                        color: lbox.color,
-                    });
+                if r < boundary_ys.len() {
+                    let n = hlines.len();
+                    let start_y = if r == 0 {
+                        boundary_ys[0]
+                    } else {
+                        boundary_ys[r] - (n.saturating_sub(1)) as f64 * rule_step
+                    };
+                    for (i, &is_dashed) in hlines.iter().enumerate() {
+                        items.push(DisplayItem::Line {
+                            x,
+                            y: start_y + i as f64 * rule_step,
+                            width: lbox.width * scale,
+                            thickness: line_thickness,
+                            color: lbox.color,
+                            dashed: is_dashed,
+                        });
+                    }
                 }
             }
 
@@ -535,6 +556,7 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
                 width: lbox.width * scale,
                 thickness: rule_thickness * scale,
                 color: lbox.color,
+                dashed: false,
             });
         }
 
@@ -548,6 +570,7 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
                 width: lbox.width * scale,
                 thickness: rule_thickness * scale,
                 color: lbox.color,
+                dashed: false,
             });
         }
 
