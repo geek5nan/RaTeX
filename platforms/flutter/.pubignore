@@ -1,5 +1,6 @@
-# Control what gets published; overrides .gitignore for this package.
-# We intentionally INCLUDE ios/RaTeX.xcframework and android jniLibs — do not list them here.
+# Control what gets published; merges with repo-root .gitignore (pub walks up to git root).
+# Root .gitignore ignores ios/RaTeX.xcframework and android jniLibs so they are not committed;
+# CI builds them before publish. Without the ! rules below, dart pub publish would omit them.
 
 # Dart / Pub
 .dart_tool/
@@ -13,3 +14,9 @@
 # Build / IDE
 *.log
 .DS_Store
+
+# Ship CI-built native artifacts (negate repo-root ignore patterns).
+!ios/RaTeX.xcframework/
+!ios/RaTeX.xcframework/**
+!android/src/main/jniLibs/
+!android/src/main/jniLibs/**
