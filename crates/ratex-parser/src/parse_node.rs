@@ -668,6 +668,23 @@ pub enum ParseNode {
         #[serde(skip_serializing_if = "Option::is_none")]
         loc: Option<SourceLocation>,
     },
+
+    #[serde(rename = "cdArrow")]
+    CdArrow {
+        mode: Mode,
+        /// "right", "left", "up", "down", "horiz_eq", "vert_eq", "none"
+        direction: String,
+        /// For right/left arrows: label above the shaft.
+        /// For up/down arrows: label to the left of the shaft.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        label_above: Option<Box<ParseNode>>,
+        /// For right/left arrows: label below the shaft.
+        /// For up/down arrows: label to the right of the shaft.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        label_below: Option<Box<ParseNode>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        loc: Option<SourceLocation>,
+    },
 }
 
 fn default_arraystretch() -> f64 {
@@ -743,7 +760,8 @@ impl ParseNode {
             | Self::HtmlMathMl { mode, .. }
             | Self::IncludeGraphics { mode, .. }
             | Self::CdLabel { mode, .. }
-            | Self::CdLabelParent { mode, .. } => *mode,
+            | Self::CdLabelParent { mode, .. }
+            | Self::CdArrow { mode, .. } => *mode,
         }
     }
 
@@ -806,6 +824,7 @@ impl ParseNode {
             Self::IncludeGraphics { .. } => "includegraphics",
             Self::CdLabel { .. } => "cdlabel",
             Self::CdLabelParent { .. } => "cdlabelparent",
+            Self::CdArrow { .. } => "cdArrow",
         }
     }
 

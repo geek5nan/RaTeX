@@ -953,3 +953,7 @@ f^{(n)}(x) = \dfrac{\mathrm{d}^n f}{\mathrm{d}x^n}
 \utilde{EF} + \widehat{GH}
 \begin{array}{|c|c|} \hline 1 & 2 \\ \hline 3 & 4 \\ \hline \end{array}
 \frac{-b \pm \sqrt{b^2-4ac}}{2a}
+\begin{CD} A @>f>> B \\ @VVV @VVV \\ C @>g>> D \end{CD}
+\begin{CD} A @= B \\ @| @| \\ C @= D \end{CD}
+\begin{CD} A @<f<< B \\ @AAA @AAA \\ C @<g<< D \end{CD}
+\begin{CD} A @>f>> B @>g>> C \\ @VVV @. @VVV \\ D @>h>> E @>k>> F \end{CD}

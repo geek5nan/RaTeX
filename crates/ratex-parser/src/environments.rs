@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use ratex_lexer::token::Token;
+
 use crate::error::{ParseError, ParseResult};
 use crate::macro_expander::MacroDefinition;
 use crate::parse_node::{AlignSpec, AlignType, Measurement, Mode, ParseNode, StyleStr};
@@ -37,6 +39,7 @@ pub static ENVIRONMENTS: std::sync::LazyLock<HashMap<&'static str, EnvSpec>> =
         register_smallmatrix(&mut map);
         register_alignat(&mut map);
         register_subarray(&mut map);
+        register_cd(&mut map);
         map
     });
 
@@ -723,6 +726,288 @@ fn register_alignat(map: &mut HashMap<&'static str, EnvSpec>) {
                 handler: handle_aligned,
             },
         );
+    }
+}
+
+// ── CD (amscd commutative diagrams) ──────────────────────────────────────
+
+fn register_cd(map: &mut HashMap<&'static str, EnvSpec>) {
+    fn handle_cd(
+        ctx: &mut EnvContext,
+        _args: Vec<ParseNode>,
+        _opt_args: Vec<Option<ParseNode>>,
+    ) -> ParseResult<ParseNode> {
+        // Collect all raw tokens until \end
+        let mut raw: Vec<Token> = Vec::new();
+        loop {
+            let tok = ctx.parser.gullet.future().clone();
+            if tok.text == "\\end" || tok.text == "EOF" {
+                break;
+            }
+            ctx.parser.gullet.pop_token();
+            raw.push(tok);
+        }
+
+        // Split into rows at \\ or \cr
+        let rows = cd_split_rows(raw);
+
+        let mut body: Vec<Vec<ParseNode>> = Vec::new();
+        let mut row_gaps: Vec<Option<Measurement>> = Vec::new();
+        let mut hlines_before_row: Vec<Vec<bool>> = Vec::new();
+        hlines_before_row.push(vec![]);
+
+        for row_toks in rows {
+            // Skip purely-whitespace rows
+            if row_toks.iter().all(|t| t.text == " ") {
+                continue;
+            }
+            let cells = cd_parse_row(ctx.parser, row_toks)?;
+            if !cells.is_empty() {
+                body.push(cells);
+                row_gaps.push(None);
+                hlines_before_row.push(vec![]);
+            }
+        }
+
+        if body.is_empty() {
+            body.push(vec![]);
+            hlines_before_row.push(vec![]);
+        }
+
+        Ok(ParseNode::Array {
+            mode: ctx.mode,
+            body,
+            row_gaps,
+            hlines_before_row,
+            cols: None,
+            col_separation_type: Some("CD".to_string()),
+            hskip_before_and_after: Some(false),
+            add_jot: None,
+            arraystretch: 1.0,
+            tags: None,
+            leqno: None,
+            is_cd: Some(true),
+            loc: None,
+        })
+    }
+
+    map.insert(
+        "CD",
+        EnvSpec {
+            num_args: 0,
+            num_optional_args: 0,
+            handler: handle_cd,
+        },
+    );
+}
+
+/// Split a flat token list into rows at `\\` or `\cr` boundaries.
+fn cd_split_rows(tokens: Vec<Token>) -> Vec<Vec<Token>> {
+    let mut rows: Vec<Vec<Token>> = Vec::new();
+    let mut current: Vec<Token> = Vec::new();
+    for tok in tokens {
+        if tok.text == "\\\\" || tok.text == "\\cr" {
+            rows.push(current);
+            current = Vec::new();
+        } else {
+            current.push(tok);
+        }
+    }
+    if !current.is_empty() {
+        rows.push(current);
+    }
+    rows
+}
+
+/// Collect tokens from `tokens[start..]` up to (but not including) the first
+/// token whose text equals `delimiter`.  Returns (collected_tokens, tokens_consumed).
+/// `tokens_consumed` includes the delimiter itself if found.
+fn cd_collect_until(tokens: &[Token], start: usize, delimiter: &str) -> (Vec<Token>, usize) {
+    let mut result = Vec::new();
+    let mut i = start;
+    while i < tokens.len() {
+        if tokens[i].text == delimiter {
+            i += 1; // consume the delimiter
+            break;
+        }
+        result.push(tokens[i].clone());
+        i += 1;
+    }
+    (result, i - start)
+}
+
+/// Collect tokens from `tokens[start..]` up to (but not including) the next `@`.
+fn cd_collect_until_at(tokens: &[Token], start: usize) -> (Vec<Token>, usize) {
+    let mut result = Vec::new();
+    let mut i = start;
+    while i < tokens.len() && tokens[i].text != "@" {
+        result.push(tokens[i].clone());
+        i += 1;
+    }
+    (result, i - start)
+}
+
+/// Use the parser to parse a token slice as a math OrdGroup.
+/// Tokens must be in forward order; this function reverses them internally for subparse().
+fn cd_parse_tokens(parser: &mut Parser, tokens: Vec<Token>) -> ParseResult<ParseNode> {
+    // Filter pure whitespace
+    let has_content = tokens.iter().any(|t| t.text != " ");
+    if !has_content {
+        return Ok(ParseNode::OrdGroup {
+            mode: parser.mode,
+            body: vec![],
+            semisimple: None,
+            loc: None,
+        });
+    }
+    // subparse() expects tokens in reverse order (stack convention)
+    let mut rev = tokens;
+    rev.reverse();
+    let body = parser.subparse(rev)?;
+    Ok(ParseNode::OrdGroup {
+        mode: parser.mode,
+        body,
+        semisimple: None,
+        loc: None,
+    })
+}
+
+/// Parse one row of a CD environment from its raw token list.
+/// Returns the list of ParseNode cells for the grid row.
+fn cd_parse_row(parser: &mut Parser, row_tokens: Vec<Token>) -> ParseResult<Vec<ParseNode>> {
+    let toks = &row_tokens;
+    let n = toks.len();
+    let mut cells: Vec<ParseNode> = Vec::new();
+    let mut i = 0usize;
+
+    while i < n {
+        // Skip spaces at start of each cell
+        while i < n && toks[i].text == " " {
+            i += 1;
+        }
+        if i >= n {
+            break;
+        }
+
+        if toks[i].text == "@" {
+            i += 1; // consume `@`
+            if i >= n {
+                return Err(ParseError::msg("Unexpected end of CD row after @"));
+            }
+            let dir = toks[i].text.clone();
+            i += 1; // consume direction char
+
+            let mode = parser.mode;
+            let arrow = match dir.as_str() {
+                ">" | "<" => {
+                    let (above_toks, c1) = cd_collect_until(toks, i, &dir);
+                    i += c1;
+                    let (below_toks, c2) = cd_collect_until(toks, i, &dir);
+                    i += c2;
+                    let label_above = cd_parse_tokens(parser, above_toks)?;
+                    let label_below = cd_parse_tokens(parser, below_toks)?;
+                    ParseNode::CdArrow {
+                        mode,
+                        direction: if dir == ">" { "right" } else { "left" }.to_string(),
+                        label_above: Some(Box::new(label_above)),
+                        label_below: Some(Box::new(label_below)),
+                        loc: None,
+                    }
+                }
+                "V" | "A" => {
+                    let (left_toks, c1) = cd_collect_until(toks, i, &dir);
+                    i += c1;
+                    let (right_toks, c2) = cd_collect_until(toks, i, &dir);
+                    i += c2;
+                    let label_above = cd_parse_tokens(parser, left_toks)?;
+                    let label_below = cd_parse_tokens(parser, right_toks)?;
+                    ParseNode::CdArrow {
+                        mode,
+                        direction: if dir == "V" { "down" } else { "up" }.to_string(),
+                        label_above: Some(Box::new(label_above)),
+                        label_below: Some(Box::new(label_below)),
+                        loc: None,
+                    }
+                }
+                "=" => ParseNode::CdArrow {
+                    mode,
+                    direction: "horiz_eq".to_string(),
+                    label_above: None,
+                    label_below: None,
+                    loc: None,
+                },
+                "|" => ParseNode::CdArrow {
+                    mode,
+                    direction: "vert_eq".to_string(),
+                    label_above: None,
+                    label_below: None,
+                    loc: None,
+                },
+                "." => ParseNode::CdArrow {
+                    mode,
+                    direction: "none".to_string(),
+                    label_above: None,
+                    label_below: None,
+                    loc: None,
+                },
+                _ => return Err(ParseError::msg(format!("Unknown CD directive: @{}", dir))),
+            };
+            cells.push(arrow);
+        } else {
+            // Object cell: collect until next `@`
+            let (obj_toks, consumed) = cd_collect_until_at(toks, i);
+            i += consumed;
+            let obj = cd_parse_tokens(parser, obj_toks)?;
+            cells.push(obj);
+        }
+    }
+
+    // Post-process: structure cells into the (2n-1) grid pattern.
+    Ok(cd_structure_row(cells, parser.mode))
+}
+
+/// Given the raw parsed cells of one CD row, produce the correctly-structured grid row.
+///
+/// Object rows already alternate: obj, h-arrow, obj, h-arrow, …, obj.
+/// Arrow rows contain only CdArrow nodes (plus whitespace OrdGroups which we strip),
+/// and need empty OrdGroup fillers inserted between consecutive arrows.
+fn cd_structure_row(cells: Vec<ParseNode>, mode: Mode) -> Vec<ParseNode> {
+    // Detect arrow row: all cells are either CdArrow or empty OrdGroup
+    let is_arrow_row = cells.iter().all(|c| match c {
+        ParseNode::CdArrow { .. } => true,
+        ParseNode::OrdGroup { body, .. } => body.is_empty(),
+        _ => false,
+    }) && cells.iter().any(|c| matches!(c, ParseNode::CdArrow { .. }));
+
+    if is_arrow_row {
+        // Keep only CdArrow cells; insert empty OrdGroup fillers between each pair
+        let arrows: Vec<ParseNode> = cells
+            .into_iter()
+            .filter(|c| matches!(c, ParseNode::CdArrow { .. }))
+            .collect();
+
+        if arrows.is_empty() {
+            return vec![];
+        }
+
+        let empty = || ParseNode::OrdGroup {
+            mode,
+            body: vec![],
+            semisimple: None,
+            loc: None,
+        };
+
+        let mut result = Vec::with_capacity(arrows.len() * 2 - 1);
+        for (idx, arrow) in arrows.into_iter().enumerate() {
+            if idx > 0 {
+                result.push(empty());
+            }
+            result.push(arrow);
+        }
+        result
+    } else {
+        // Object row: already in correct format
+        cells
     }
 }
 
