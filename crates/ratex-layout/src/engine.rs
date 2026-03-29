@@ -2052,6 +2052,12 @@ fn layout_array(
     const ALIGN_RELATION_MU: f64 = 3.0;
     let col_gap = match col_sep_type {
         Some("align") | Some("alignat") => mu_to_em(ALIGN_RELATION_MU, metrics.quad),
+        Some("small") => {
+            // smallmatrix: 2 × thickspace × (script_multiplier / current_multiplier)
+            // KaTeX: arraycolsep = 0.2778em × (scriptMultiplier / sizeMultiplier)
+            2.0 * mu_to_em(5.0, metrics.quad) * MathStyle::Script.size_multiplier()
+                / options.size_multiplier()
+        }
         _ => 2.0 * 5.0 * pt, // 2 × arraycolsep
     };
     let cell_options = match col_sep_type {
