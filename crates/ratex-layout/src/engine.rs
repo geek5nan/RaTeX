@@ -2974,38 +2974,37 @@ fn layout_horiz_brace(
         .trim_start_matches('\\')
         .ends_with("bracket");
 
-    // mathtools-style `\overbracket` / `\underbracket`: square bracket stroke (no KaTeX glyph).
-    let leg = 0.12_f64;
-    let (raw_commands, brace_h, brace_fill) = if is_bracket {
-        let cmds = if is_over {
-            horiz_overbracket_path(w, leg)
+    // `\overbrace`/`\underbrace` and mathtools `\overbracket`/`\underbracket`: KaTeX stretchy SVG (filled paths).
+    let stretch_key = if is_bracket {
+        if is_over {
+            "overbracket"
         } else {
-            horiz_underbracket_path(w, leg)
-        };
-        (cmds, leg, false)
+            "underbracket"
+        }
+    } else if is_over {
+        "overbrace"
     } else {
-        let stretch_key = if is_over { "overbrace" } else { "underbrace" };
-        // KaTeXSize4 brace glyphs are closed contours meant for fill (like stretchy arrows).
-        // fill=false strokes outlines → hollow “wireframe” and exaggerated bar ends.
+        "underbrace"
+    };
+
+    let (raw_commands, brace_h, brace_fill) =
         match crate::katex_svg::katex_stretchy_path(stretch_key, w) {
             Some((c, h)) => (c, h, true),
             None => {
                 let h = 0.35_f64;
                 (horiz_brace_path(w, h, is_over), h, false)
             }
-        }
-    };
+        };
 
     // Shift y-coordinates: centered commands → positioned for over/under
-    // For overbrace: foot at y=0 (bottom), peak goes up → shift by -brace_h/2
-    // For underbrace: foot at y=0 (top), peak goes down → shift by +brace_h/2
-    // Bracket paths are already in accent-local coordinates (no shift).
-    let commands = if is_bracket {
-        raw_commands
+    // For over: foot at y=0 (bottom), peak goes up → shift by -brace_h/2
+    // For under: foot at y=0 (top), peak goes down → shift by +brace_h/2
+    let y_shift = if is_over {
+        -brace_h / 2.0
     } else {
-        let y_shift = if is_over { -brace_h / 2.0 } else { brace_h / 2.0 };
-        shift_path_y(raw_commands, y_shift)
+        brace_h / 2.0
     };
+    let commands = shift_path_y(raw_commands, y_shift);
 
     let brace_box = LayoutBox {
         width: w,
@@ -3207,7 +3206,10 @@ fn layout_textcircled(body_box: LayoutBox, options: &LayoutOptions) -> LayoutBox
         width: diameter,
         height: r - cy.min(0.0),
         depth: (r + cy).max(0.0),
-        content: BoxContent::SvgPath { commands: circle_commands, fill: false },
+        content: BoxContent::SvgPath {
+            commands: circle_commands,
+            fill: false,
+        },
         color: options.color,
     };
 
@@ -3310,7 +3312,10 @@ fn layout_imageof_origof(imageof: bool, options: &LayoutOptions) -> LayoutBox {
         width: 2.0 * r,
         height: h,
         depth: d,
-        content: BoxContent::SvgPath { commands: circle_commands(cx, r), fill: true },
+        content: BoxContent::SvgPath {
+            commands: circle_commands(cx, r),
+            fill: true,
+        },
         color: options.color,
     };
 
@@ -3318,7 +3323,10 @@ fn layout_imageof_origof(imageof: bool, options: &LayoutOptions) -> LayoutBox {
         width: 2.0 * r,
         height: h,
         depth: d,
-        content: BoxContent::SvgPath { commands: circle_commands(cx, r_ring), fill: false },
+        content: BoxContent::SvgPath {
+            commands: circle_commands(cx, r_ring),
+            fill: false,
+        },
         color: options.color,
     };
 
@@ -3750,7 +3758,10 @@ fn layout_cd_arrow(
                 width: shaft_w,
                 height: arrow_half,
                 depth: arrow_half,
-                content: BoxContent::SvgPath { commands, fill: fill_arrow },
+                content: BoxContent::SvgPath {
+                    commands,
+                    fill: fill_arrow,
+                },
                 color: options.color,
             };
 
@@ -4057,28 +4068,6 @@ fn layout_cd(body: &[Vec<ParseNode>], options: &LayoutOptions) -> LayoutBox {
         },
         color: options.color,
     }
-}
-
-/// Horizontal square bracket under the body (mathtools `\underbracket`).
-/// Path in accent-local coords: baseline at the top bar (y=0); legs extend to y=+leg.
-fn horiz_underbracket_path(width: f64, leg: f64) -> Vec<PathCommand> {
-    vec![
-        PathCommand::MoveTo { x: 0.0, y: leg },
-        PathCommand::LineTo { x: 0.0, y: 0.0 },
-        PathCommand::LineTo { x: width, y: 0.0 },
-        PathCommand::LineTo { x: width, y: leg },
-    ]
-}
-
-/// Horizontal square bracket over the body (mathtools `\overbracket`).
-/// Path in accent-local coords: baseline at the bottom bar (y=0); legs extend to y=-leg.
-fn horiz_overbracket_path(width: f64, leg: f64) -> Vec<PathCommand> {
-    vec![
-        PathCommand::MoveTo { x: 0.0, y: -leg },
-        PathCommand::LineTo { x: 0.0, y: 0.0 },
-        PathCommand::LineTo { x: width, y: 0.0 },
-        PathCommand::LineTo { x: width, y: -leg },
-    ]
 }
 
 fn horiz_brace_path(width: f64, height: f64, is_over: bool) -> Vec<PathCommand> {

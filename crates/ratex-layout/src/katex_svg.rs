@@ -813,6 +813,12 @@ const RIGHTGROUP: &str = "M0 80h399565c371 0 266.7 149.4 414 180 5.9 1.2 18 0 18
 // rightgroupunder (for \undergroup, viewBox 400000×342)
 const RIGHTGROUPUNDER: &str = "M0 262h399565c371 0 266.7-149.4 414-180 5.9-1.2 18 0 18 0 2 0 3 1 3 3v38c-76 158-257 219-435 219H0z";
 
+// Horizontal brackets (KaTeX `svgGeometry.ts`, viewBox 400000×440 / 410)
+const LEFTBRACKETOVER: &str = "M0 440 h120 V150 H399995 v-120 H0z";
+const RIGHTBRACKETOVER: &str = "M399995 440 h-120 V150 H0 v-120 H399995z";
+const LEFTBRACKETUNDER: &str = "M0 0 h120 V290 H399995 v120 H0z";
+const RIGHTBRACKETUNDER: &str = "M399995 0 h-120 V290 H0 v120 H400000z";
+
 // vec from glyph U+20D7 in font KaTeX Main
 const _VEC_KATEX: &str = "M377 20c0-5.333 1.833-10 5.5-14S391 0 397 0c4.667 0 8.667 1.667 12 5 3.333 2.667 6.667 9 10 19 6.667 24.667 20.333 43.667 41 57 7.333 4.667 11 10.667 11 18 0 6-1 10-3 12s-6.667 5-14 9c-28.667 14.667-53.667 35.667-75 63-1.333 1.333-3.167 3.5-5.5 6.5s-4 4.833-5 5.5c-1 .667-2.5 1.333-4.5 2s-4.333 1-7 1c-4.667 0-9.167-1.833-13.5-5.5S337 184 337 178c0-12.667 15.667-32.333 47-59 H213l-171-1c-8.667-6-13-12.333-13-19 0-4.667 4.333-11.333 13-20h359 c-16-25.333-24-45-24-59z";
 
@@ -872,6 +878,9 @@ fn katex_image_data(label: &str) -> Option<KatexImageData> {
         // Overbrace/underbrace: KaTeX Size4 glyphs (viewBox 400000×548), same 3-piece horizontal joining as stretchy arrows.
         "overbrace"  => Some(KatexImageData { paths: &["leftbrace", "midbrace", "rightbrace"], min_width: 0.888, vb_height: 548.0, align: None }),
         "underbrace" => Some(KatexImageData { paths: &["leftbraceunder", "midbraceunder", "rightbraceunder"], min_width: 0.888, vb_height: 548.0, align: None }),
+        // mathtools `\overbracket` / `\underbracket`: 2-piece KaTeX SVG (same minWidth/height as KaTeX `stretchy.ts`).
+        "overbracket"  => Some(KatexImageData { paths: &["leftbracketover", "rightbracketover"], min_width: 1.6, vb_height: 440.0, align: None }),
+        "underbracket" => Some(KatexImageData { paths: &["leftbracketunder", "rightbracketunder"], min_width: 1.6, vb_height: 410.0, align: None }),
         _ => None,
     }
 }
@@ -923,6 +932,10 @@ fn path_for_name(name: &str) -> Option<&'static str> {
         "leftgroupunder"       => Some(LEFTGROUPUNDER),
         "rightgroup"           => Some(RIGHTGROUP),
         "rightgroupunder"      => Some(RIGHTGROUPUNDER),
+        "leftbracketover"      => Some(LEFTBRACKETOVER),
+        "rightbracketover"     => Some(RIGHTBRACKETOVER),
+        "leftbracketunder"     => Some(LEFTBRACKETUNDER),
+        "rightbracketunder"    => Some(RIGHTBRACKETUNDER),
         _ => None,
     }
 }
