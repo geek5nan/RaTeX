@@ -191,6 +191,7 @@ fn layout_node(node: &ParseNode, options: &LayoutOptions) -> LayoutBox {
             bar_size,
             left_delim,
             right_delim,
+            continued,
             ..
         } => {
             let bar_thickness = if *has_bar_line {
@@ -201,7 +202,7 @@ fn layout_node(node: &ParseNode, options: &LayoutOptions) -> LayoutBox {
             } else {
                 0.0
             };
-            let frac = layout_fraction(numer, denom, bar_thickness, options);
+            let frac = layout_fraction(numer, denom, bar_thickness, *continued, options);
 
             let has_left = left_delim.as_ref().is_some_and(|d| !d.is_empty() && d != ".");
             let has_right = right_delim.as_ref().is_some_and(|d| !d.is_empty() && d != ".");
@@ -559,6 +560,16 @@ fn missing_glyph_metrics_fallback(ch: char, options: &LayoutOptions) -> (f64, f6
     }
 }
 
+/// KaTeX `SymbolNode.toNode`: math symbols use `margin-right: italic` (advance = width + italic).
+#[inline]
+fn math_glyph_advance_em(m: &ratex_font::CharMetrics, mode: Mode) -> f64 {
+    if mode == Mode::Math {
+        m.width + m.italic
+    } else {
+        m.width
+    }
+}
+
 fn layout_symbol(text: &str, mode: Mode, options: &LayoutOptions) -> LayoutBox {
     let ch = resolve_symbol_char(text, mode);
 
@@ -576,7 +587,7 @@ fn layout_symbol(text: &str, mode: Mode, options: &LayoutOptions) -> LayoutBox {
     {
         let m = get_char_metrics(font_id, metric_cp);
         let (width, height, depth) = match m {
-            Some(m) => (m.width, m.height, m.depth),
+            Some(m) => (math_glyph_advance_em(&m, mode), m.height, m.depth),
             None => missing_glyph_metrics_fallback(ch, options),
         };
         return LayoutBox {
@@ -602,7 +613,7 @@ fn layout_symbol(text: &str, mode: Mode, options: &LayoutOptions) -> LayoutBox {
     }
 
     let (width, height, depth) = match metrics {
-        Some(m) => (m.width, m.height, m.depth),
+        Some(m) => (math_glyph_advance_em(&m, mode), m.height, m.depth),
         None => missing_glyph_metrics_fallback(ch, options),
     };
 
@@ -704,6 +715,7 @@ fn layout_fraction(
     numer: &ParseNode,
     denom: &ParseNode,
     bar_thickness: f64,
+    continued: bool,
     options: &LayoutOptions,
 ) -> LayoutBox {
     let numer_s = options.style.numerator();
@@ -711,7 +723,19 @@ fn layout_fraction(
     let numer_style = options.with_style(numer_s);
     let denom_style = options.with_style(denom_s);
 
-    let numer_box = layout_node(numer, &numer_style);
+    let mut numer_box = layout_node(numer, &numer_style);
+    // KaTeX genfrac.js: `\cfrac` pads the numerator with a \strut (TeXbook p.353): 8.5pt × 3.5pt.
+    if continued {
+        let pt = options.metrics().pt_per_em;
+        let h_min = 8.5 / pt;
+        let d_min = 3.5 / pt;
+        if numer_box.height < h_min {
+            numer_box.height = h_min;
+        }
+        if numer_box.depth < d_min {
+            numer_box.depth = d_min;
+        }
+    }
     let denom_box = layout_node(denom, &denom_style);
 
     // Size ratios for converting child em to parent em
@@ -920,14 +944,9 @@ fn layout_supsub(
         sub_shift += metrics.big_op_spacing2 + 0.2;
     }
 
-    // Italic correction: KaTeX adds margin-right = italic to italic math characters,
-    // so superscripts start at advance_width + italic_correction.
-    // Only apply to simple single-glyph bases (not complex sub-expressions).
-    let italic_correction = if is_char_box && !center_scripts {
-        glyph_italic(&base_box)
-    } else {
-        0.0
-    };
+    // Superscript horizontal offset: `layout_symbol` already uses advance width + italic
+    // (KaTeX `margin-right: italic`), so we must not add `glyph_italic` again here.
+    let italic_correction = 0.0;
 
     // KaTeX `supsub.js`: for SymbolNode bases, subscripts get `margin-left: -base.italic` so they
     // are not shifted by the base's italic correction (e.g. ∫_{A_1}).
@@ -1479,6 +1498,14 @@ fn glyph_italic(lb: &LayoutBox) -> f64 {
 /// Extract the skew (italic correction) of the innermost/last glyph in a box.
 /// Used by shifty accents (\hat, \tilde…) to horizontally centre the mark
 /// over italic math letters (e.g. M in MathItalic has skew ≈ 0.083em).
+/// KaTeX `groupLength` for wide SVG accents: `ordgroup.body.length`, else 1.
+fn accent_ordgroup_len(base: &ParseNode) -> usize {
+    match base {
+        ParseNode::OrdGroup { body, .. } => body.len().max(1),
+        _ => 1,
+    }
+}
+
 fn glyph_skew(lb: &LayoutBox) -> f64 {
     match &lb.content {
         BoxContent::Glyph { font_id, char_code } => {
@@ -1511,7 +1538,7 @@ fn layout_accent(
 
     // Try KaTeX exact SVG paths first (widehat, widetilde, overgroup, etc.)
     if let Some((commands, w, h, fill)) =
-        crate::katex_svg::katex_accent_path(label, base_w)
+        crate::katex_svg::katex_accent_path(label, base_w, accent_ordgroup_len(base))
     {
         // KaTeX paths use SVG coords (y down): height=0, depth=h
         let accent_box = LayoutBox {
@@ -1524,7 +1551,8 @@ fn layout_accent(
         // KaTeX `accent.ts` uses `clearance = min(body.height, xHeight)` for ordinary accents.
         // That matches fixed-size `\vec` (svgData.vec); using it for *width-scaled* SVG accents
         // (\widehat, \widetilde, \overgroup, …) pulls the path down onto the base (golden 0604/0885/0886).
-        let gap = 0.08;
+        // Slightly tighter than 0.08em — aligns wide SVG hats with KaTeX PNG crops (e.g. 0935).
+        let gap = 0.065;
         let clearance = if is_below {
             body_box.height + body_box.depth + gap
         } else if label == "\\vec" {
@@ -2840,7 +2868,14 @@ fn layout_font(font: &str, body: &ParseNode, options: &LayoutOptions) -> LayoutB
 fn layout_with_font(node: &ParseNode, font_id: FontId, options: &LayoutOptions) -> LayoutBox {
     match node {
         ParseNode::OrdGroup { body, .. } => {
-            let children: Vec<LayoutBox> = body.iter().map(|n| layout_with_font(n, font_id, options)).collect();
+            let kern = options.inter_glyph_kern_em;
+            let mut children: Vec<LayoutBox> = Vec::with_capacity(body.len().saturating_mul(2));
+            for (i, n) in body.iter().enumerate() {
+                if i > 0 && kern > 0.0 {
+                    children.push(LayoutBox::new_kern(kern));
+                }
+                children.push(layout_with_font(n, font_id, options));
+            }
             make_hbox(children)
         }
         ParseNode::SupSub {
@@ -2863,7 +2898,7 @@ fn layout_with_font(node: &ParseNode, font_id: FontId, options: &LayoutOptions) 
                 .unwrap_or(char_code);
             if let Some(m) = get_char_metrics(font_id, metric_cp) {
                 LayoutBox {
-                    width: m.width,
+                    width: math_glyph_advance_em(&m, Mode::Math),
                     height: m.height,
                     depth: m.depth,
                     content: BoxContent::Glyph { font_id, char_code },
@@ -2924,7 +2959,10 @@ fn layout_underline(body: &ParseNode, options: &LayoutOptions) -> LayoutBox {
 /// `\href` / `\url`: link color on the glyphs and an underline in the same color (KaTeX-style).
 fn layout_href(body: &[ParseNode], options: &LayoutOptions) -> LayoutBox {
     let link_color = Color::from_name("blue").unwrap_or_else(|| Color::rgb(0.0, 0.0, 1.0));
-    let body_opts = options.with_color(link_color);
+    // Slight tracking matches KaTeX/browser monospace link width in golden PNGs.
+    let body_opts = options
+        .with_color(link_color)
+        .with_inter_glyph_kern(0.024);
     let body_box = layout_expression(body, &body_opts, true);
     layout_underline_laid_out(body_box, options, link_color)
 }

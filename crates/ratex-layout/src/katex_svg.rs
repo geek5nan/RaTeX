@@ -1,10 +1,13 @@
 use ratex_types::PathCommand;
 
-/// Returns (commands, width, height, fill) for a KaTeX SVG accent,
-/// or None if the label is not handled here.
+/// Returns (commands, width, height, fill) for a KaTeX SVG accent, or `None` if unhandled.
+///
+/// `group_len` is KaTeX’s `groupLength(base)` (`ordgroup.body.length`) for `\\widehat` /
+/// `\\widecheck` / `\\widetilde` / `\\utilde` — variant choice uses this, not base width.
 pub fn katex_accent_path(
     label: &str,
     base_width_em: f64,
+    group_len: usize,
 ) -> Option<(Vec<PathCommand>, f64, f64, bool)> {
     match label {
         "\\vec" => {
@@ -17,12 +20,12 @@ pub fn katex_accent_path(
         }
         "\\widehat" | "\\widecheck" => {
             let is_hat = label == "\\widehat";
-            let (path, vb_w, vb_h, h_em) = select_hat_check(base_width_em, is_hat);
+            let (path, vb_w, vb_h, h_em) = select_hat_check(is_hat, group_len);
             let cmds = parse_and_fit_nonuniform(path, vb_w, vb_h, base_width_em, h_em);
             Some((cmds, base_width_em, h_em, true))
         }
         "\\widetilde" | "\\utilde" => {
-            let (path, vb_w, vb_h, h_em) = select_tilde(base_width_em);
+            let (path, vb_w, vb_h, h_em) = select_tilde(group_len);
             let cmds = parse_and_fit_nonuniform(path, vb_w, vb_h, base_width_em, h_em);
             Some((cmds, base_width_em, h_em, true))
         }
@@ -283,23 +286,40 @@ fn scale_svg_path_thousandths(cmds: &[PathCommand]) -> Vec<PathCommand> {
         .collect()
 }
 
-/// KaTeX selects widehat/widecheck variant by character count.
-/// We approximate using width: < 0.7 → 1 char, < 1.2 → 2, < 2.0 → 3-4, else 5+.
-fn select_hat_check(width_em: f64, is_hat: bool) -> (&'static str, f64, f64, f64) {
-    let idx = if width_em < 0.7 { 1 } else if width_em < 1.2 { 2 } else if width_em < 2.0 { 3 } else { 4 };
-    let prefix = if is_hat { &WIDEHAT } else { &WIDECHECK };
-    let vb_w = [0.0, 1062.0, 2364.0, 2364.0, 2364.0][idx];
-    let vb_h = [0.0, 239.0, 300.0, 360.0, 420.0][idx];
-    let h_em = [0.0, 0.24, 0.3, 0.36, 0.42][idx];
-    (prefix[idx - 1], vb_w, vb_h, h_em)
+/// KaTeX `svgSpan` / `svgGeometry.js`: `imgIndex = [1,1,2,2,3,3][numChars]` for `numChars` ≤ 5;
+/// `numChars > 5` uses the fourth (widest/tallest) asset.
+fn wide_accent_img_index(group_len: usize) -> usize {
+    if group_len > 5 {
+        4
+    } else {
+        [1, 1, 2, 2, 3, 3][group_len]
+    }
 }
 
-fn select_tilde(width_em: f64) -> (&'static str, f64, f64, f64) {
-    let idx = if width_em < 0.7 { 1 } else if width_em < 1.2 { 2 } else if width_em < 2.0 { 3 } else { 4 };
-    let vb_w = [0.0, 600.0, 1033.0, 2339.0, 2340.0][idx];
-    let vb_h = [0.0, 260.0, 286.0, 306.0, 312.0][idx];
-    let h_em = [0.0, 0.26, 0.286, 0.306, 0.34][idx];
-    (TILDE[idx - 1], vb_w, vb_h, h_em)
+fn select_hat_check(is_hat: bool, group_len: usize) -> (&'static str, f64, f64, f64) {
+    let img_index = wide_accent_img_index(group_len);
+    let prefix = if is_hat { &WIDEHAT } else { &WIDECHECK };
+    let vb_w = [0.0, 1062.0, 2364.0, 2364.0, 2364.0][img_index];
+    let vb_h = [0.0, 239.0, 300.0, 360.0, 420.0][img_index];
+    // KaTeX: `_height = [0, 0.24, 0.3, 0.3, 0.36, 0.42][imgIndex]`; `numChars > 5` forces 0.42.
+    let h_em = if group_len > 5 {
+        0.42
+    } else {
+        [0.0, 0.24, 0.3, 0.3, 0.36, 0.42][img_index]
+    };
+    (prefix[img_index - 1], vb_w, vb_h, h_em)
+}
+
+fn select_tilde(group_len: usize) -> (&'static str, f64, f64, f64) {
+    let img_index = wide_accent_img_index(group_len);
+    let vb_w = [0.0, 600.0, 1033.0, 2339.0, 2340.0][img_index];
+    let vb_h = [0.0, 260.0, 286.0, 306.0, 312.0][img_index];
+    let h_em = if group_len > 5 {
+        0.34
+    } else {
+        [0.0, 0.26, 0.286, 0.3, 0.306, 0.34][img_index]
+    };
+    (TILDE[img_index - 1], vb_w, vb_h, h_em)
 }
 
 /// Parse SVG path and scale with independent X/Y factors (preserveAspectRatio="none").
@@ -1155,13 +1175,13 @@ mod tests {
 
     #[test]
     fn test_katex_accent_widehat() {
-        let result = katex_accent_path("\\widehat", 1.5);
+        let result = katex_accent_path("\\widehat", 1.5, 1);
         assert!(result.is_some());
     }
 
     #[test]
     fn test_katex_accent_overgroup() {
-        let result = katex_accent_path("\\overgroup", 1.5);
+        let result = katex_accent_path("\\overgroup", 1.5, 1);
         assert!(result.is_some());
     }
 
