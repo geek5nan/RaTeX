@@ -81,15 +81,18 @@ fn svg_formula(
 }
 
 fn default_font_dir() -> String {
+    const MARKER: &str = "KaTeX_Main-Regular.ttf";
     let candidates = [
         "fonts",
         "../fonts",
         "../../fonts",
+        "../../../fonts",
     ];
     for c in &candidates {
-        if std::path::Path::new(c).exists() {
+        let p = std::path::Path::new(c);
+        if p.join(MARKER).is_file() {
             return c.to_string();
         }
     }
-    candidates[0].to_string()
+    "fonts".to_string()
 }

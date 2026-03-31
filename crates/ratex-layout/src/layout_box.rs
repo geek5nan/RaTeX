@@ -125,8 +125,8 @@ pub enum BoxContent {
         /// Extra x padding before the first column (= arraycolsep when hskip_before_and_after is true).
         content_x_offset: f64,
         /// For each column boundary (0 = before col 0, ..., num_cols = after last col),
-        /// whether there is a vertical rule separator ('|').
-        col_separators: Vec<bool>,
+        /// the vertical rule separator type: None = no rule, Some(false) = solid '|', Some(true) = dashed ':'.
+        col_separators: Vec<Option<bool>>,
         /// For each row boundary (0 = before row 0, ..., num_rows = after last row),
         /// the list of hlines: false = solid, true = dashed.
         hlines_before_row: Vec<Vec<bool>>,

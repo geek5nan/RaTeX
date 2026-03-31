@@ -18,6 +18,7 @@ pub(crate) fn load_all_fonts(font_dir: &str) -> Result<HashMap<FontId, Vec<u8>>,
         (FontId::AmsRegular, "KaTeX_AMS-Regular.ttf"),
         (FontId::CaligraphicRegular, "KaTeX_Caligraphic-Regular.ttf"),
         (FontId::FrakturRegular, "KaTeX_Fraktur-Regular.ttf"),
+        (FontId::FrakturBold, "KaTeX_Fraktur-Bold.ttf"),
         (FontId::SansSerifRegular, "KaTeX_SansSerif-Regular.ttf"),
         (FontId::SansSerifBold, "KaTeX_SansSerif-Bold.ttf"),
         (FontId::SansSerifItalic, "KaTeX_SansSerif-Italic.ttf"),
@@ -73,7 +74,7 @@ pub(crate) fn glyph_svg_path(
         None => font_cache.get(&FontId::MainRegular)?,
     };
 
-    let ch = char::from_u32(char_code).unwrap_or('?');
+    let ch = ratex_font::katex_ttf_glyph_char(font_id, char_code);
     let glyph_id = font.glyph_id(ch);
 
     if glyph_id.0 == 0 {

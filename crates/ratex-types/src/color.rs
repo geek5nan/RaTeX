@@ -114,15 +114,23 @@ impl Color {
     pub fn from_name(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
             "red" => Some(Self::rgb(1.0, 0.0, 0.0)),
+            // CSS `green` is #008000; `lime` is #00ff00 (HTML 4 / CSS1 standard colors).
             "green" => Some(Self::rgb(0.0, 0.502, 0.0)),
+            "lime" => Some(Self::rgb(0.0, 1.0, 0.0)),
             "blue" => Some(Self::rgb(0.0, 0.0, 1.0)),
+            "maroon" => Some(Self::rgb(0.502, 0.0, 0.0)),
+            "navy" => Some(Self::rgb(0.0, 0.0, 0.502)),
+            "olive" => Some(Self::rgb(0.502, 0.502, 0.0)),
+            "silver" => Some(Self::rgb(0.753, 0.753, 0.753)),
             "white" => Some(Self::WHITE),
             "black" => Some(Self::BLACK),
             "orange" => Some(Self::rgb(1.0, 0.647, 0.0)),
             "yellow" => Some(Self::rgb(1.0, 1.0, 0.0)),
             "purple" => Some(Self::rgb(0.502, 0.0, 0.502)),
-            "cyan" => Some(Self::rgb(0.0, 1.0, 1.0)),
-            "magenta" => Some(Self::rgb(1.0, 0.0, 1.0)),
+            // CSS: `aqua` ≡ `cyan` (#00ffff); common in `\colorbox`/xcolor examples.
+            "aqua" | "cyan" => Some(Self::rgb(0.0, 1.0, 1.0)),
+            // CSS: `fuchsia` ≡ `magenta`
+            "fuchsia" | "magenta" => Some(Self::rgb(1.0, 0.0, 1.0)),
             "gray" | "grey" => Some(Self::rgb(0.502, 0.502, 0.502)),
             "brown" => Some(Self::rgb(0.647, 0.165, 0.165)),
             "pink" => Some(Self::rgb(1.0, 0.753, 0.796)),
@@ -200,6 +208,14 @@ mod tests {
     fn test_from_name() {
         assert!(Color::from_name("red").is_some());
         assert!(Color::from_name("Blue").is_some());
+        let aqua = Color::from_name("aqua").unwrap();
+        let cyan = Color::from_name("cyan").unwrap();
+        assert_eq!(aqua, cyan);
+        assert!(Color::from_name("lime").is_some());
+        assert!(Color::from_name("maroon").is_some());
+        assert!(Color::from_name("navy").is_some());
+        assert!(Color::from_name("olive").is_some());
+        assert!(Color::from_name("silver").is_some());
         assert!(Color::from_name("nonexistent").is_none());
     }
 

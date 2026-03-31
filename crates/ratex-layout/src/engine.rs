@@ -568,9 +568,29 @@ fn layout_symbol(text: &str, mode: Mode, options: &LayoutOptions) -> LayoutBox {
         _ => {}
     }
 
-    let mut font_id = select_font(text, ch, mode, options);
     let char_code = ch as u32;
 
+    if let Some((font_id, metric_cp)) =
+        ratex_font::font_and_metric_for_mathematical_alphanumeric(char_code)
+    {
+        let m = get_char_metrics(font_id, metric_cp);
+        let (width, height, depth) = match m {
+            Some(m) => (m.width, m.height, m.depth),
+            None => missing_glyph_metrics_fallback(ch, options),
+        };
+        return LayoutBox {
+            width,
+            height,
+            depth,
+            content: BoxContent::Glyph {
+                font_id,
+                char_code,
+            },
+            color: options.color,
+        };
+    }
+
+    let mut font_id = select_font(text, ch, mode, options);
     let mut metrics = get_char_metrics(font_id, char_code);
 
     if metrics.is_none() && mode == Mode::Math && font_id != FontId::MathItalic {
@@ -603,6 +623,13 @@ fn resolve_symbol_char(text: &str, mode: Mode) -> char {
         Mode::Math => ratex_font::Mode::Math,
         Mode::Text => ratex_font::Mode::Text,
     };
+
+    if let Some(raw) = text.chars().next() {
+        let ru = raw as u32;
+        if (0x1D400..=0x1D7FF).contains(&ru) {
+            return raw;
+        }
+    }
 
     if let Some(info) = ratex_font::get_symbol(text, font_mode) {
         if let Some(cp) = info.codepoint {
@@ -2126,10 +2153,10 @@ fn layout_array(
             .collect()
     };
 
-    // Detect vertical separator ('|') positions in the column spec.
-    // col_separators[i] = true means there is a '|' at boundary i (0 = before col 0, num_cols = after last col).
-    let col_separators: Vec<bool> = {
-        let mut seps = vec![false; num_cols + 1];
+    // Detect vertical separator positions in the column spec.
+    // col_separators[i]: None = no rule, Some(false) = solid '|', Some(true) = dashed ':'.
+    let col_separators: Vec<Option<bool>> = {
+        let mut seps = vec![None; num_cols + 1];
         let mut align_count = 0usize;
         if let Some(cs) = cols {
             for spec in cs {
@@ -2137,7 +2164,12 @@ fn layout_array(
                     AlignType::Align => align_count += 1,
                     AlignType::Separator if spec.align.as_deref() == Some("|") => {
                         if align_count <= num_cols {
-                            seps[align_count] = true;
+                            seps[align_count] = Some(false);
+                        }
+                    }
+                    AlignType::Separator if spec.align.as_deref() == Some(":") => {
+                        if align_count <= num_cols {
+                            seps[align_count] = Some(true);
                         }
                     }
                     _ => {}
@@ -2353,24 +2385,8 @@ fn layout_text(body: &[ParseNode], options: &LayoutOptions) -> LayoutBox {
     let mut children = Vec::new();
     for node in body {
         match node {
-            ParseNode::TextOrd { text, .. } | ParseNode::MathOrd { text, .. } => {
-                let ch = resolve_symbol_char(text, Mode::Text);
-                let char_code = ch as u32;
-                let m = get_char_metrics(FontId::MainRegular, char_code);
-                let (w, h, d) = match m {
-                    Some(m) => (m.width, m.height, m.depth),
-                    None => missing_glyph_metrics_fallback(ch, options),
-                };
-                children.push(LayoutBox {
-                    width: w,
-                    height: h,
-                    depth: d,
-                    content: BoxContent::Glyph {
-                        font_id: FontId::MainRegular,
-                        char_code,
-                    },
-                    color: options.color,
-                });
+            ParseNode::TextOrd { text, mode, .. } | ParseNode::MathOrd { text, mode, .. } => {
+                children.push(layout_symbol(text, *mode, options));
             }
             ParseNode::SpacingNode { text, .. } => {
                 children.push(layout_spacing_command(text, options));
@@ -2740,7 +2756,10 @@ fn layout_with_font(node: &ParseNode, font_id: FontId, options: &LayoutOptions) 
         | ParseNode::Atom { text, .. } => {
             let ch = resolve_symbol_char(text, Mode::Math);
             let char_code = ch as u32;
-            if let Some(m) = get_char_metrics(font_id, char_code) {
+            let metric_cp = ratex_font::font_and_metric_for_mathematical_alphanumeric(char_code)
+                .map(|(_, m)| m)
+                .unwrap_or(char_code);
+            if let Some(m) = get_char_metrics(font_id, metric_cp) {
                 LayoutBox {
                     width: m.width,
                     height: m.height,
@@ -4027,7 +4046,7 @@ fn layout_cd(body: &[Vec<ParseNode>], options: &LayoutOptions) -> LayoutBox {
     let col_aligns: Vec<u8> = (0..num_cols).map(|_| b'c').collect();
 
     // No vertical separators for CD
-    let col_separators = vec![false; num_cols + 1];
+    let col_separators = vec![None; num_cols + 1];
 
     let mut total_height = 0.0_f64;
     let mut row_positions = Vec::with_capacity(num_rows);

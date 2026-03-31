@@ -57,6 +57,8 @@
         return `${sizePx}px KaTeX_Caligraphic`;
       case "Fraktur-Regular":
         return `${sizePx}px KaTeX_Fraktur`;
+      case "Fraktur-Bold":
+        return `bold ${sizePx}px KaTeX_Fraktur`;
       case "Main-Bold":
         return `bold ${sizePx}px KaTeX_Main`;
       case "Main-BoldItalic":
@@ -169,6 +171,7 @@
       document.fonts.load(`${EM}px KaTeX_AMS`),
       document.fonts.load(`${EM}px KaTeX_Caligraphic`),
       document.fonts.load(`${EM}px KaTeX_Fraktur`),
+      document.fonts.load(`bold ${EM}px KaTeX_Fraktur`),
       document.fonts.load(`${EM}px KaTeX_SansSerif`),
       document.fonts.load(`italic ${EM}px KaTeX_SansSerif`),
       document.fonts.load(`bold ${EM}px KaTeX_SansSerif`),

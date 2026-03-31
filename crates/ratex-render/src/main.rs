@@ -78,15 +78,22 @@ fn render_formula(
 }
 
 fn default_font_dir() -> String {
+    // If this file exists, the directory is a full KaTeX `.ttf` tree (incl. KaTeX_Fraktur-Bold.ttf).
+    const MARKER: &str = "KaTeX_Main-Regular.ttf";
     let candidates = [
+        "fonts",
+        "../fonts",
+        "../../fonts",
+        "../../../fonts",
         "tools/lexer_compare/node_modules/katex/dist/fonts",
         "../tools/lexer_compare/node_modules/katex/dist/fonts",
         "../../tools/lexer_compare/node_modules/katex/dist/fonts",
     ];
     for c in &candidates {
-        if std::path::Path::new(c).exists() {
+        let p = std::path::Path::new(c);
+        if p.join(MARKER).is_file() {
             return c.to_string();
         }
     }
-    candidates[0].to_string()
+    "fonts".to_string()
 }

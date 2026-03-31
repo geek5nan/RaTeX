@@ -1168,6 +1168,7 @@ function fontIdToCss(fontId, sizePx) {
     case "AMS-Regular":         return `${sizePx}px KaTeX_AMS`;
     case "Caligraphic-Regular": return `${sizePx}px KaTeX_Caligraphic`;
     case "Fraktur-Regular":     return `${sizePx}px KaTeX_Fraktur`;
+    case "Fraktur-Bold":        return `bold ${sizePx}px KaTeX_Fraktur`;
     case "Main-Bold":           return `bold ${sizePx}px KaTeX_Main`;
     case "Main-BoldItalic":     return `italic bold ${sizePx}px KaTeX_Main`;
     case "Main-Italic":         return `italic ${sizePx}px KaTeX_Main`;
@@ -1445,6 +1446,7 @@ async function loadFontsAndWasm() {
       document.fonts.load('20px KaTeX_AMS'),
       document.fonts.load('20px KaTeX_Caligraphic'),
       document.fonts.load('20px KaTeX_Fraktur'),
+      document.fonts.load('bold 20px KaTeX_Fraktur'),
       document.fonts.load('20px KaTeX_SansSerif'),
       document.fonts.load('italic 20px KaTeX_SansSerif'),
       document.fonts.load('bold 20px KaTeX_SansSerif'),

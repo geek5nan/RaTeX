@@ -21,6 +21,7 @@ object RaTeXFontLoader {
         "AMS-Regular" to "KaTeX_AMS-Regular.ttf",
         "Caligraphic-Regular" to "KaTeX_Caligraphic-Regular.ttf",
         "Fraktur-Regular" to "KaTeX_Fraktur-Regular.ttf",
+        "Fraktur-Bold" to "KaTeX_Fraktur-Bold.ttf",
         "Main-Bold" to "KaTeX_Main-Bold.ttf",
         "Main-BoldItalic" to "KaTeX_Main-BoldItalic.ttf",
         "Main-Italic" to "KaTeX_Main-Italic.ttf",

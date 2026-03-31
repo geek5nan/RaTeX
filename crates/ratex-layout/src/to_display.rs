@@ -31,8 +31,8 @@ pub fn to_display_list(root: &LayoutBox) -> DisplayList {
     // Compute visual bounding box from actual display items.
     // This handles cases like \smash (zero height/depth) and \mathllap (zero width)
     // where content extends beyond the nominal box dimensions.
-    // Only expand when the nominal dimension is very small (near-zero),
-    // to avoid expanding for content that intentionally overflows (e.g. \clap inside \sum).
+    // Horizontal: near-zero nominal width gets full expansion; otherwise we still shift when
+    // `min_x < 0` so \mathclap under large operators does not paint off the left edge.
     let (min_x, max_x, min_y, max_y) = compute_visual_bounds(&items);
 
     let mut width = root.width;
@@ -56,7 +56,10 @@ pub fn to_display_list(root: &LayoutBox) -> DisplayList {
         }
     }
 
-    // Expand horizontal dimensions only when nominal width is near-zero (e.g. \mathllap, \mathrlap)
+    // Expand horizontal dimensions when nominal width is near-zero (e.g. pure \mathllap), or when
+    // ink extends left of x=0. The latter happens for `\sum_{\mathclap{…}}`: the subscript box has
+    // zero advance but negative kerns center the ink, so the first glyph can sit at negative x.
+    // Rasterizers (PNG) clip there; shift right so all items stay in [0, width].
     if root.width < 0.01 {
         if min_x < -0.001 {
             let extra = -min_x;
@@ -68,6 +71,12 @@ pub fn to_display_list(root: &LayoutBox) -> DisplayList {
         let shifted_max_x = if min_x < -0.001 { max_x - min_x } else { max_x };
         if shifted_max_x > width + 0.001 {
             width = shifted_max_x;
+        }
+    } else if min_x < -0.001 {
+        let extra = -min_x;
+        width = (root.width + extra).max(max_x + extra);
+        for item in &mut items {
+            shift_item_x(item, extra);
         }
     }
 
@@ -407,21 +416,40 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
                 }
             }
 
-            // Draw vertical column separator lines ('|').
+            // Draw vertical column separator lines ('|' = solid, ':' = dashed).
             // Separator at position i has local x = content_x_offset - col_gap/2 + sum(col_widths[..i]) + col_gap * i.
             let col_gap_half = col_gap / 2.0;
-            for (i, &has_sep) in col_separators.iter().enumerate() {
-                if has_sep {
+            for (i, sep) in col_separators.iter().enumerate() {
+                if let Some(is_dashed) = sep {
                     let prefix_w: f64 = col_widths[..i].iter().sum();
                     let local_x = content_x_offset - col_gap_half + prefix_w + col_gap * i as f64;
                     let abs_x = x + local_x * scale - line_thickness / 2.0;
-                    items.push(DisplayItem::Rect {
-                        x: abs_x,
-                        y: y_top,
-                        width: line_thickness,
-                        height: array_total_height,
-                        color: lbox.color,
-                    });
+                    if *is_dashed {
+                        // Dashed vertical line: draw segments (dash=4t, gap=4t) top to bottom.
+                        let t = line_thickness;
+                        let dash = 4.0 * t;
+                        let period = 2.0 * dash;
+                        let mut cur_y = y_top;
+                        while cur_y < y_top + array_total_height {
+                            let seg_h = dash.min(y_top + array_total_height - cur_y);
+                            items.push(DisplayItem::Rect {
+                                x: abs_x,
+                                y: cur_y,
+                                width: t,
+                                height: seg_h,
+                                color: lbox.color,
+                            });
+                            cur_y += period;
+                        }
+                    } else {
+                        items.push(DisplayItem::Rect {
+                            x: abs_x,
+                            y: y_top,
+                            width: line_thickness,
+                            height: array_total_height,
+                            color: lbox.color,
+                        });
+                    }
                 }
             }
 

@@ -32,6 +32,7 @@ function fontIdToCss(fontId: string, sizePx: number): string {
     case "AMS-Regular":        return `${sizePx}px KaTeX_AMS`;
     case "Caligraphic-Regular":return `${sizePx}px KaTeX_Caligraphic`;
     case "Fraktur-Regular":    return `${sizePx}px KaTeX_Fraktur`;
+    case "Fraktur-Bold":       return `bold ${sizePx}px KaTeX_Fraktur`;
     case "Main-Bold":          return `bold ${sizePx}px KaTeX_Main`;
     case "Main-BoldItalic":    return `italic bold ${sizePx}px KaTeX_Main`;
     case "Main-Italic":        return `italic ${sizePx}px KaTeX_Main`;
