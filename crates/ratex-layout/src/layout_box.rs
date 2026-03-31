@@ -69,6 +69,9 @@ pub enum BoxContent {
         /// Italic correction of the base character (em). Superscript x is offset by this amount
         /// beyond base.width, matching KaTeX's margin-right on italic math symbols.
         italic_correction: f64,
+        /// Horizontal kern (em) applied to the subscript: KaTeX uses `margin-left: -base.italic` on
+        /// `SymbolNode` bases so subscripts are not pushed out by the base's italic correction.
+        sub_h_kern: f64,
     },
 
     /// A radical (square root).

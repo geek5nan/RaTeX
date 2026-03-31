@@ -80,6 +80,23 @@ pub fn to_display_list(root: &LayoutBox) -> DisplayList {
         }
     }
 
+    // Filled SVG paths (e.g. KaTeX `tallDelim` for `\vert`) can extend slightly above y=0 from
+    // curve overshoot; the pixmap uses nominal height/depth only and would clip. Shift down and
+    // grow depth when needed so all path ink fits. (Skip when `total_h < 0.01`: that case already
+    // adjusted vertical bounds using the same `min_y`.)
+    if total_h >= 0.01 && min_y < -0.001 {
+        let extra = -min_y;
+        height += extra;
+        for item in &mut items {
+            shift_item_y(item, extra);
+        }
+        let new_bottom = height + depth;
+        let adjusted_max_y = max_y + extra;
+        if adjusted_max_y > new_bottom + 0.001 {
+            depth = adjusted_max_y - height;
+        }
+    }
+
     DisplayList {
         items,
         width,
@@ -190,6 +207,7 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
             sub_scale: bs,
             center_scripts,
             italic_correction,
+            sub_h_kern,
         } => {
             let base_x = if *center_scripts {
                 x + (lbox.width - base.width) * scale / 2.0
@@ -211,7 +229,7 @@ fn emit_box(lbox: &LayoutBox, x: f64, y: f64, scale: f64, items: &mut Vec<Displa
                 let sub_x = if *center_scripts {
                     x + (lbox.width * scale - sub_box.width * child_scale) / 2.0
                 } else {
-                    base_x + base.width * scale
+                    base_x + base.width * scale + sub_h_kern * scale
                 };
                 emit_box(sub_box, sub_x, y + sub_shift * scale, child_scale, items);
             }
@@ -654,8 +672,8 @@ fn glyph_placeholder_commands(width: f64, height: f64, depth: f64) -> Vec<PathCo
     ]
 }
 
-/// Compute the visual bounding box from glyph, line, and rect items.
-/// Excludes Path items which may have extreme coordinates (e.g. KaTeX SVG viewBox artifacts).
+/// Compute the visual bounding box from glyph, line, rect, and path items (paths only when
+/// coordinates are within a sane em range — skips huge KaTeX `viewBox` artifacts).
 /// Returns (min_x, max_x, min_y, max_y) in em coordinates.
 fn compute_visual_bounds(items: &[DisplayItem]) -> (f64, f64, f64, f64) {
     let mut min_x = f64::MAX;
@@ -691,9 +709,50 @@ fn compute_visual_bounds(items: &[DisplayItem]) -> (f64, f64, f64, f64) {
                 min_y = min_y.min(*y);
                 max_y = max_y.max(y + height);
             }
-            // Skip Path items — they may contain extreme coordinates
-            // (e.g. \phase SVG paths with viewBox width 400000)
-            DisplayItem::Path { .. } => {}
+            // Paths in document em space (delimiters, accents): include bbox so tall `tallDelim`
+            // curves are not clipped at the pixmap edge. Skip astronomical KaTeX coords (e.g. \phase).
+            DisplayItem::Path {
+                x: px,
+                y: py,
+                commands,
+                ..
+            } => {
+                const MAX_EM: f64 = 50.0;
+                for cmd in commands {
+                    let mut consider = |cx: f64, cy: f64| {
+                        if cx.abs() <= MAX_EM && cy.abs() <= MAX_EM {
+                            let abs_x = px + cx;
+                            let abs_y = py + cy;
+                            min_x = min_x.min(abs_x);
+                            max_x = max_x.max(abs_x);
+                            min_y = min_y.min(abs_y);
+                            max_y = max_y.max(abs_y);
+                        }
+                    };
+                    match cmd {
+                        PathCommand::MoveTo { x: cx, y: cy } | PathCommand::LineTo { x: cx, y: cy } => {
+                            consider(*cx, *cy);
+                        }
+                        PathCommand::CubicTo {
+                            x1,
+                            y1,
+                            x2,
+                            y2,
+                            x,
+                            y,
+                        } => {
+                            consider(*x1, *y1);
+                            consider(*x2, *y2);
+                            consider(*x, *y);
+                        }
+                        PathCommand::QuadTo { x1, y1, x, y } => {
+                            consider(*x1, *y1);
+                            consider(*x, *y);
+                        }
+                        PathCommand::Close => {}
+                    }
+                }
+            }
         }
     }
 

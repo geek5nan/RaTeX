@@ -7,6 +7,8 @@ use ratex_types::color::Color;
 use ratex_types::display_item::{DisplayItem, DisplayList};
 use tiny_skia::{FillRule, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
+use crate::unicode_fallback::unicode_fallback_font_bytes;
+
 pub struct RenderOptions {
     pub font_size: f32,
     pub padding: f32,
@@ -216,6 +218,16 @@ fn render_glyph(
             let fid = fallback.glyph_id(ch);
             if fid.0 != 0 {
                 return render_glyph_with_font(pixmap, px, py, fallback, fid, color, em);
+            }
+        }
+        // KaTeX TTFs omit many BMP symbols (e.g. U+263A from `\char`). Browsers use system fonts;
+        // load one Unicode-capable face via `RATEX_UNICODE_FONT` or fontdb / common paths.
+        if let Some(bytes) = unicode_fallback_font_bytes() {
+            if let Ok(fb) = FontRef::try_from_slice(bytes) {
+                let fid = fb.glyph_id(ch);
+                if fid.0 != 0 {
+                    return render_glyph_with_font(pixmap, px, py, &fb, fid, color, em);
+                }
             }
         }
         return;
@@ -476,10 +488,12 @@ fn render_path_segment(
         );
         if fill {
             paint.anti_alias = true;
+            // Even-odd: KaTeX `tallDelim` vert uses two subpaths (outline + stem); nonzero winding
+            // double-fills the stem and inflates ink vs reference PNGs.
             pixmap.fill_path(
                 &path,
                 &paint,
-                FillRule::Winding,
+                FillRule::EvenOdd,
                 Transform::identity(),
                 None,
             );
