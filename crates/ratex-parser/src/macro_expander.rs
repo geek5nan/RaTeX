@@ -315,10 +315,10 @@ impl<'a> MacroExpander<'a> {
             ("\\liminf", "\\DOTSB\\operatorname*{lim\\,inf}"),
             ("\\injlim", "\\DOTSB\\operatorname*{inj\\,lim}"),
             ("\\projlim", "\\DOTSB\\operatorname*{proj\\,lim}"),
-            ("\\varlimsup", "\\DOTSB\\operatorname*{\\overline{lim}}"),
-            ("\\varliminf", "\\DOTSB\\operatorname*{\\underline{lim}}"),
-            ("\\varinjlim", "\\DOTSB\\operatorname*{\\underrightarrow{lim}}"),
-            ("\\varprojlim", "\\DOTSB\\operatorname*{\\underleftarrow{lim}}"),
+            ("\\varlimsup", "\\DOTSB\\operatorname*{\\overline{\\mathrm{lim}}}"),
+            ("\\varliminf", "\\DOTSB\\operatorname*{\\underline{\\mathrm{lim}}}"),
+            ("\\varinjlim", "\\DOTSB\\operatorname*{\\underrightarrow{\\mathrm{lim}}}"),
+            ("\\varprojlim", "\\DOTSB\\operatorname*{\\underleftarrow{\\mathrm{lim}}}"),
 
             // ── statmath ──
             ("\\argmin", "\\DOTSB\\operatorname*{arg\\,min}"),
