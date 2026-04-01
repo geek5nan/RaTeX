@@ -1725,6 +1725,11 @@ fn layout_accent(
                 katex_pos + correction
             }
         };
+        // KaTeX VList places the accent so its depth-bottom edge sits at the kern
+        // position.  The accent baseline is therefore depth higher than that edge.
+        // Without this term, glyphs with non-zero depth (notably \tilde, depth=0.35)
+        // are positioned too low, overlapping the base character.
+        let base_clearance = base_clearance + accent_box.depth;
         if label == "\\bar" || label == "\\=" {
             (base_clearance - 0.12).max(0.0)
         } else {
