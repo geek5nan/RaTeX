@@ -1712,11 +1712,21 @@ fn layout_accent(
                     inner_cl + 0.3
                 }
             }
-            _ => body_box.height,
+            _ => {
+                // KaTeX positions glyph accents by kerning DOWN by
+                // min(body.height, xHeight), so the accent baseline sits at
+                //   max(0, body.height - xHeight)
+                // above the formula baseline.  This keeps the accent within the
+                // body's height bounds for normal-height bases and produces a
+                // formula height == body_height (accent adds no extra height),
+                // matching KaTeX's VList.
+                let katex_pos = (body_box.height - options.metrics().x_height).max(0.0);
+                let correction = (accent_box.height - 0.35_f64.min(accent_box.height)).max(0.0);
+                katex_pos + correction
+            }
         };
-        // \bar and \= (macron): add small extra gap so bar distance matches KaTeX reference
         if label == "\\bar" || label == "\\=" {
-            base_clearance - 0.2
+            (base_clearance - 0.12).max(0.0)
         } else {
             base_clearance
         }
