@@ -2767,10 +2767,16 @@ fn layout_cancel(
     let h = inner.height;
     let d = inner.depth;
 
-    // KaTeX padding: single character gets vertical extension, multi-char gets horizontal.
+    // \sout uses no padding — the line spans exactly the content width/height.
+    // KaTeX cancel padding: single character gets vertical extension, multi-char gets horizontal.
     let single = is_single_char_body(body);
-    let v_pad = if single { 0.2 } else { 0.0 };
-    let h_pad = if single { 0.0 } else { 0.2 };
+    let (v_pad, h_pad) = if label == "\\sout" {
+        (0.0, 0.0)
+    } else if single {
+        (0.2, 0.0)
+    } else {
+        (0.0, 0.2)
+    };
 
     // Path coordinates: y=0 at baseline, y<0 above (height), y>0 below (depth).
     // \cancel  = "/" diagonal: bottom-left → top-right
