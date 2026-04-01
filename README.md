@@ -60,6 +60,26 @@ RaTeX cuts the web stack out entirely:
 | **Server / CI** | tiny-skia → PNG rasterizer | Out of the box |
 | **SVG** | `ratex-svg` → self-contained vector SVG | Out of the box |
 
+### Screenshots
+
+From the demo apps in [`demo/screenshots/`](demo/screenshots/).
+
+**iOS**
+
+![RaTeX demo on iOS](demo/screenshots/ios.png)
+
+**Android**
+
+![RaTeX demo on Android](demo/screenshots/android.png)
+
+**Flutter (iOS)**
+
+![RaTeX demo on Flutter iOS](demo/screenshots/flutter-ios.png)
+
+**React Native (iOS)**
+
+![RaTeX demo on React Native iOS](demo/screenshots/react-native-ios.png)
+
 ---
 
 ## Architecture

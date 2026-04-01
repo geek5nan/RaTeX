@@ -60,6 +60,26 @@ RaTeX 完全去掉 Web 栈：
 | **服务端 / CI** | tiny-skia → PNG 光栅化 | 可用 |
 | **SVG** | `ratex-svg` → 自包含矢量 SVG 导出 | 可用 |
 
+### 截图
+
+演示应用截图见 [`demo/screenshots/`](demo/screenshots/)。
+
+**iOS**
+
+![RaTeX iOS 演示](demo/screenshots/ios.png)
+
+**Android**
+
+![RaTeX Android 演示](demo/screenshots/android.png)
+
+**Flutter（iOS）**
+
+![RaTeX Flutter iOS 演示](demo/screenshots/flutter-ios.png)
+
+**React Native（iOS）**
+
+![RaTeX React Native iOS 演示](demo/screenshots/react-native-ios.png)
+
 ---
 
 ## 架构
