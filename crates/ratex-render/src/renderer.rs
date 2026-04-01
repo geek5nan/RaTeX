@@ -7,9 +7,13 @@ use ratex_types::color::Color;
 use ratex_types::display_item::{DisplayItem, DisplayList};
 use tiny_skia::{FillRule, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
+use crate::unicode_fallback::unicode_fallback_font_bytes;
+
 pub struct RenderOptions {
     pub font_size: f32,
     pub padding: f32,
+    /// Directory containing KaTeX `*.ttf` files (see `load_all_fonts`). Each file that exists is
+    /// loaded; missing files (e.g. no `KaTeX_Fraktur-Bold.ttf`) are skipped and that face falls back.
     pub font_dir: String,
     /// Multiplies pixels-per-em (and padding) so the same layout renders at higher resolution
     /// (e.g. 2.0 to align RaTeX PNG pixel density with Puppeteer `deviceScaleFactor: 2` refs).
@@ -133,6 +137,8 @@ pub fn render_to_png(
     encode_png(&pixmap)
 }
 
+/// Load KaTeX TTFs from disk. Only existing paths are inserted; callers should point [RenderOptions::font_dir]
+/// at a folder that includes every face the layout may emit (e.g. repo root `fonts/`).
 fn load_all_fonts(font_dir: &str) -> Result<HashMap<FontId, Vec<u8>>, String> {
     let mut data = HashMap::new();
     let font_map = [
@@ -145,6 +151,7 @@ fn load_all_fonts(font_dir: &str) -> Result<HashMap<FontId, Vec<u8>>, String> {
         (FontId::AmsRegular, "KaTeX_AMS-Regular.ttf"),
         (FontId::CaligraphicRegular, "KaTeX_Caligraphic-Regular.ttf"),
         (FontId::FrakturRegular, "KaTeX_Fraktur-Regular.ttf"),
+        (FontId::FrakturBold, "KaTeX_Fraktur-Bold.ttf"),
         (FontId::SansSerifRegular, "KaTeX_SansSerif-Regular.ttf"),
         (FontId::SansSerifBold, "KaTeX_SansSerif-Bold.ttf"),
         (FontId::SansSerifItalic, "KaTeX_SansSerif-Italic.ttf"),
@@ -203,7 +210,7 @@ fn render_glyph(
         },
     };
 
-    let ch = char::from_u32(char_code).unwrap_or('?');
+    let ch = ratex_font::katex_ttf_glyph_char(font_id, char_code);
     let glyph_id = font.glyph_id(ch);
 
     if glyph_id.0 == 0 {
@@ -211,6 +218,16 @@ fn render_glyph(
             let fid = fallback.glyph_id(ch);
             if fid.0 != 0 {
                 return render_glyph_with_font(pixmap, px, py, fallback, fid, color, em);
+            }
+        }
+        // KaTeX TTFs omit many BMP symbols (e.g. U+263A from `\char`). Browsers use system fonts;
+        // load one Unicode-capable face via `RATEX_UNICODE_FONT` or fontdb / common paths.
+        if let Some(bytes) = unicode_fallback_font_bytes() {
+            if let Ok(fb) = FontRef::try_from_slice(bytes) {
+                let fid = fb.glyph_id(ch);
+                if fid.0 != 0 {
+                    return render_glyph_with_font(pixmap, px, py, &fb, fid, color, em);
+                }
             }
         }
         return;
@@ -471,10 +488,12 @@ fn render_path_segment(
         );
         if fill {
             paint.anti_alias = true;
+            // Even-odd: KaTeX `tallDelim` vert uses two subpaths (outline + stem); nonzero winding
+            // double-fills the stem and inflates ink vs reference PNGs.
             pixmap.fill_path(
                 &path,
                 &paint,
-                FillRule::Winding,
+                FillRule::EvenOdd,
                 Transform::identity(),
                 None,
             );

@@ -967,3 +967,19 @@ f^{(n)}(x) = \dfrac{\mathrm{d}^n f}{\mathrm{d}x^n}
 \begin{CD} P @>>> Q \\ @VVV @. @VVV \\ R @>>> S \\ @VVV @VVV \\ T @>>> U \end{CD}
 \begin{CD} W @>>> X \\ @| @| \\ Y @>>> Z \end{CD}
 \begin{CD} \operatorname{Hom}(A,B) @>>> \mathrm{End}(V) \\ @VVV @VVV \\ 0 @>>> 1 \end{CD}
+\underbracket{a+b+c}_{\text{note}}
+\overbracket{a+b+c}^{\text{note}}
+\overbracket{AB}
+\underbracket{AB}
+\def\arraystretch{1.5}\begin{array}{c:c:c} a & b & c \\ \hline d & e & f \\ \hdashline g & h & i \end{array}
+\text{𝐀-𝐙 𝐚-𝐳 𝟎-𝟗}
+\text{𝔸-}ℤ\ 𝕜
+\text{𝑨-𝒁 𝒂-𝒛}
+\text{𝗔-𝗭 𝗮-𝘇 𝟬-𝟵}
+\text{𝒜-𝒵}
+\text{$𝔄$-$ℨ$}\text{ $𝔞$-$𝔷$}
+\text{𝙰-𝚉 𝚊-𝚣 𝟶-𝟿}
+\text{𝕬-𝖅 𝖆-𝖟}
+\displaystyle\sum_{\mathclap{1\le i\le j\le n}} x_{ij}
+\colorbox{aqua}{$F=ma$}
+\fcolorbox{red}{aqua}{$F=ma$}

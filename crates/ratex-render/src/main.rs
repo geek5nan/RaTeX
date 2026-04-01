@@ -30,10 +30,17 @@ fn main() {
         .and_then(|s| s.parse::<f32>().ok())
         .unwrap_or(1.0);
 
+    let font_size = args
+        .iter()
+        .position(|a| a == "--font-size")
+        .and_then(|i| args.get(i + 1))
+        .and_then(|s| s.parse::<f32>().ok())
+        .unwrap_or(40.0);
+
     std::fs::create_dir_all(&output_dir).expect("Failed to create output dir");
 
     let options = RenderOptions {
-        font_size: 40.0,
+        font_size,
         padding: 10.0,
         font_dir,
         device_pixel_ratio,
@@ -78,15 +85,22 @@ fn render_formula(
 }
 
 fn default_font_dir() -> String {
+    // If this file exists, the directory is a full KaTeX `.ttf` tree (incl. KaTeX_Fraktur-Bold.ttf).
+    const MARKER: &str = "KaTeX_Main-Regular.ttf";
     let candidates = [
+        "fonts",
+        "../fonts",
+        "../../fonts",
+        "../../../fonts",
         "tools/lexer_compare/node_modules/katex/dist/fonts",
         "../tools/lexer_compare/node_modules/katex/dist/fonts",
         "../../tools/lexer_compare/node_modules/katex/dist/fonts",
     ];
     for c in &candidates {
-        if std::path::Path::new(c).exists() {
+        let p = std::path::Path::new(c);
+        if p.join(MARKER).is_file() {
             return c.to_string();
         }
     }
-    candidates[0].to_string()
+    "fonts".to_string()
 }

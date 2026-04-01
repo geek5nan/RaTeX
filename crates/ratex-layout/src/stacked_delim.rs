@@ -314,15 +314,11 @@ fn make_glyph_stack_delim(kind: StackDelimKind, height_total: f64, options: &Lay
             let top = get_char_metrics(FontId::Size4Regular, top_c)?;
             let mid = get_char_metrics(FontId::Size4Regular, mid_c)?;
             let bot = get_char_metrics(FontId::Size4Regular, bot_c)?;
-            let rep = get_char_metrics(FontId::Size4Regular, 0x23aa)?;
             let top_ht = height_depth(&top);
             let mid_ht = height_depth(&mid);
             let bot_ht = height_depth(&bot);
-            let rep_ht = height_depth(&rep);
             let min_h = top_ht + mid_ht + bot_ht;
-            let rep_count = (((height_total - min_h) / (2.0 * rep_ht)).ceil() as i32).max(0);
-            let real_h = min_h + f64::from(rep_count) * 2.0 * rep_ht;
-            let inner_h = (real_h - top_ht - bot_ht - mid_ht) / 2.0 + 2.0 * LAP;
+            let inner_h = ((height_total - min_h) / 2.0).max(0.0) + 2.0 * LAP;
 
             let ch: Vec<VBoxChild> = vec![
                 bx(size4_glyph(top_c, options)),
@@ -346,14 +342,10 @@ fn make_glyph_stack_delim(kind: StackDelimKind, height_total: f64, options: &Lay
             };
             let top = get_char_metrics(FontId::Size4Regular, top_c)?;
             let bot = get_char_metrics(FontId::Size4Regular, bot_c)?;
-            let rep = get_char_metrics(FontId::Size4Regular, 0x23aa)?;
             let top_ht = height_depth(&top);
             let bot_ht = height_depth(&bot);
-            let rep_ht = height_depth(&rep);
             let min_h = top_ht + bot_ht;
-            let rep_count = (((height_total - min_h) / rep_ht).ceil() as i32).max(0);
-            let real_h = min_h + f64::from(rep_count) * rep_ht;
-            let inner_h = real_h - top_ht - bot_ht + 2.0 * LAP;
+            let inner_h = (height_total - min_h).max(0.0) + 2.0 * LAP;
 
             let ch: Vec<VBoxChild> = vec![
                 bx(size4_glyph(top_c, options)),

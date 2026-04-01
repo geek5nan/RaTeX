@@ -66,6 +66,66 @@ def normalize_size(img: np.ndarray, target_h: int = NORM_HEIGHT) -> np.ndarray:
     return np.array(resized, dtype=np.uint8)
 
 
+def _best_2d_alignment(ref_ink: np.ndarray, test_ink: np.ndarray, max_vshift: int, max_hshift: int) -> tuple:
+    """Try 2D shifts of `test_ink` relative to `ref_ink` to maximize intersection.
+
+    Font rasterization differences between browser (fixture) and native renderer
+    (RaTeX) cause small vertical and horizontal offsets after crop-to-content +
+    normalize.  This finds the (dy, dx) shift that best aligns the two ink masks
+    and returns the metrics computed at that alignment.
+    """
+    h, w = ref_ink.shape
+    best_isect = 0
+    best_dy = 0
+    best_dx = 0
+
+    ref_count = int(np.sum(ref_ink))
+
+    for dy in range(-max_vshift, max_vshift + 1):
+        if dy > 0:
+            r_y0, r_y1 = dy, h
+            t_y0, t_y1 = 0, h - dy
+        elif dy < 0:
+            r_y0, r_y1 = 0, h + dy
+            t_y0, t_y1 = -dy, h
+        else:
+            r_y0, r_y1 = 0, h
+            t_y0, t_y1 = 0, h
+
+        ref_strip = ref_ink[r_y0:r_y1, :]
+        test_strip = test_ink[t_y0:t_y1, :]
+
+        for dx in range(-max_hshift, max_hshift + 1):
+            if dx > 0:
+                isect = int(np.sum(ref_strip[:, dx:] & test_strip[:, :w - dx]))
+            elif dx < 0:
+                isect = int(np.sum(ref_strip[:, :w + dx] & test_strip[:, -dx:]))
+            else:
+                isect = int(np.sum(ref_strip & test_strip))
+
+            if isect > best_isect:
+                best_isect = isect
+                best_dy = dy
+                best_dx = dx
+
+    shifted = np.zeros_like(test_ink)
+    ty0 = max(0, best_dy)
+    ty1 = min(h, h + best_dy)
+    sy0 = max(0, -best_dy)
+    sy1 = sy0 + (ty1 - ty0)
+    tx0 = max(0, best_dx)
+    tx1 = min(w, w + best_dx)
+    sx0 = max(0, -best_dx)
+    sx1 = sx0 + (tx1 - tx0)
+    shifted[ty0:ty1, tx0:tx1] = test_ink[sy0:sy1, sx0:sx1]
+
+    aligned_test_count = int(np.sum(shifted))
+    intersection = int(np.sum(ref_ink & shifted))
+    union = int(np.sum(ref_ink | shifted))
+
+    return intersection, union, ref_count, aligned_test_count, best_dy
+
+
 def compute_ink_metrics(ref_img: np.ndarray, test_img: np.ndarray) -> dict:
     """Compare two images: crop to content, normalize size, then compare ink overlap."""
     # Step 1: crop to content bounding box
@@ -92,14 +152,14 @@ def compute_ink_metrics(ref_img: np.ndarray, test_img: np.ndarray) -> dict:
     ref_final = pad_w(ref_norm, w)
     test_final = pad_w(test_norm, w)
 
-    # Step 4: compute ink-based metrics
+    # Step 4: compute ink-based metrics with vertical alignment
     ref_ink = get_ink_mask(ref_final)
     test_ink = get_ink_mask(test_final)
 
-    ref_count = int(np.sum(ref_ink))
-    test_count = int(np.sum(test_ink))
-    intersection = int(np.sum(ref_ink & test_ink))
-    union = int(np.sum(ref_ink | test_ink))
+    max_vshift = NORM_HEIGHT // 8
+    max_hshift = max(rw, tw) // 16
+    intersection, union, ref_count, test_count, _best_dy = \
+        _best_2d_alignment(ref_ink, test_ink, max_vshift, max_hshift)
 
     iou = intersection / union if union > 0 else 1.0
 
@@ -284,9 +344,9 @@ def main():
         if len(failures) > 20:
             print(f"  ... and {len(failures) - 20} more")
 
-    low_score = [(n, f, s) for n, f, s, _ in results if s["score"] < 0.5]
+    low_score = [(n, f, s) for n, f, s, _ in results if s["score"] < 0.7]
     if low_score:
-        print(f"\nScore < 0.5 ({len(low_score)}):")
+        print(f"\nScore < 0.7 ({len(low_score)}):")
         for name, formula, stats in low_score[:20]:
             print(f"  {name}: score={stats['score']:.3f} iou={stats['iou']:.3f} "
                   f"recall={stats['recall']:.3f} aspect={stats['aspect_sim']:.2f} | {formula[:50]}")

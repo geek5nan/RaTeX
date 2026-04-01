@@ -11,6 +11,9 @@
  * mhchem (\\ce, \\pu, …) is loaded after KaTeX via Puppeteer addScriptTag so file://
  * reference runs always register macros; do not rely on a second <script src="contrib/…"> alone.
  * KaTeX dist is resolved from tools/golden_compare/node_modules or tools/lexer_compare/node_modules.
+ *
+ * Requires KaTeX ≥ 0.16.42 (e.g. ^0.16.44 in package.json) so mathtools-style \\underbracket / \\overbracket
+ * parse; older 0.16.x patch releases omit them and render as undefined control sequence.
  */
 import { readFileSync, writeFileSync, unlinkSync, mkdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';

@@ -2,7 +2,17 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-FONT_DIR="$ROOT/tools/lexer_compare/node_modules/katex/dist/fonts"
+# ratex-render / render-svg need KaTeX *.ttf (not only woff). Prefer repo `fonts/`; fall back to
+# katex npm dist when present (e.g. after `npm install` under tools/lexer_compare).
+MARKER="KaTeX_Main-Regular.ttf"
+if [[ -f "$ROOT/fonts/$MARKER" ]]; then
+  FONT_DIR="$ROOT/fonts"
+elif [[ -f "$ROOT/tools/lexer_compare/node_modules/katex/dist/fonts/$MARKER" ]]; then
+  FONT_DIR="$ROOT/tools/lexer_compare/node_modules/katex/dist/fonts"
+else
+  FONT_DIR="$ROOT/fonts"
+  echo "WARNING: $MARKER not found under fonts/ or katex dist; PNG/SVG may fail or use partial fonts." >&2
+fi
 OUTPUT_DIR="$ROOT/tests/golden/output"
 OUTPUT_CE_DIR="$ROOT/tests/golden/output_ce"
 OUTPUT_SVG_DIR="$ROOT/tests/golden/output_svg"

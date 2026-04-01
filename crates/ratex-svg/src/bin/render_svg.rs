@@ -31,11 +31,18 @@ fn main() {
         .and_then(|s| s.parse::<f32>().ok())
         .unwrap_or(1.0);
 
+    let font_size = args
+        .iter()
+        .position(|a| a == "--font-size")
+        .and_then(|i| args.get(i + 1))
+        .and_then(|s| s.parse::<f64>().ok())
+        .unwrap_or(40.0);
+
     std::fs::create_dir_all(&output_dir).expect("Failed to create output dir");
 
     let dpr = device_pixel_ratio.clamp(0.01, 16.0) as f64;
     let svg_opts = SvgOptions {
-        font_size: 40.0 * dpr,
+        font_size: font_size * dpr,
         padding: 10.0 * dpr,
         stroke_width: 1.5 * dpr,
         embed_glyphs: true,
@@ -81,15 +88,18 @@ fn svg_formula(
 }
 
 fn default_font_dir() -> String {
+    const MARKER: &str = "KaTeX_Main-Regular.ttf";
     let candidates = [
         "fonts",
         "../fonts",
         "../../fonts",
+        "../../../fonts",
     ];
     for c in &candidates {
-        if std::path::Path::new(c).exists() {
+        let p = std::path::Path::new(c);
+        if p.join(MARKER).is_file() {
             return c.to_string();
         }
     }
-    candidates[0].to_string()
+    "fonts".to_string()
 }

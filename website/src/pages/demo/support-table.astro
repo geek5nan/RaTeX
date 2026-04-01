@@ -9,6 +9,8 @@ interface Props {
 const { lang = "en" } = Astro.props;
 const t = useTranslations(lang);
 const base = import.meta.env.BASE_URL;
+/** Mean of GOLDEN_SCORES in public/demo-support-table.js (1057 rows; global #380 has no RaTeX PNG). */
+const offlineScoreMean = "0.90";
 
 const filterActive =
   "filter-btn rounded-full border border-primary bg-primary px-3 py-1.5 text-xs font-medium text-on-primary shadow-sm transition-colors";
@@ -18,7 +20,7 @@ const filterIdle =
 
 <BaseLayout
   title="RaTeX — Formula support table"
-  description="1058 golden formulas (incl. mhchem \\ce / \\pu): RaTeX WASM vs KaTeX 0.16.9, IoU vs reference PNGs. Batch offline scores plus a live RaTeX column in your browser."
+  description={`1058 golden formulas (incl. mhchem \\ce / \\pu): RaTeX WASM vs KaTeX 0.16.9, ink IoU vs reference PNGs (batch mean ≈ ${offlineScoreMean} on scored rows). Live RaTeX column in your browser.`}
   active="demo"
   lang={lang}
   copyright={t.footer.copyright}
@@ -185,13 +187,17 @@ const filterIdle =
         </div>
 
         <div
-          class="mt-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
+          class="mt-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4"
           role="group"
           aria-label="Score distribution summary"
         >
           <div class="p-8 md:p-10 flex flex-col bg-white border border-outline/50 shadow-sm rounded-[12px] overflow-hidden ring-1 ring-black/[0.04] text-center">
             <div class="text-3xl md:text-4xl font-bold text-emerald-600 tabular-nums leading-none mb-2" id="cnt-great">—</div>
             <div class="text-xs font-label uppercase tracking-wide text-on-surface-variant">{t.supportTable.scoreGreat}</div>
+          </div>
+          <div class="p-8 md:p-10 flex flex-col bg-white border border-outline/50 shadow-sm rounded-[12px] overflow-hidden ring-1 ring-black/[0.04] text-center">
+            <div class="text-3xl md:text-4xl font-bold text-teal-700 tabular-nums leading-none mb-2" id="cnt-high8">—</div>
+            <div class="text-xs font-label uppercase tracking-wide text-on-surface-variant">{t.supportTable.scoreHigh8}</div>
           </div>
           <div class="p-8 md:p-10 flex flex-col bg-white border border-outline/50 shadow-sm rounded-[12px] overflow-hidden ring-1 ring-black/[0.04] text-center">
             <div class="text-3xl md:text-4xl font-bold text-sky-700 tabular-nums leading-none mb-2" id="cnt-mid-hi">—</div>
@@ -205,7 +211,7 @@ const filterIdle =
             <div class="text-3xl md:text-4xl font-bold text-red-600 tabular-nums leading-none mb-2" id="cnt-low">—</div>
             <div class="text-xs font-label uppercase tracking-wide text-on-surface-variant">{t.supportTable.scoreLow}</div>
           </div>
-          <div class="p-8 md:p-10 flex flex-col bg-white border border-outline/50 shadow-sm rounded-[12px] overflow-hidden ring-1 ring-black/[0.04] text-center col-span-2 sm:col-span-1 lg:col-span-1">
+          <div class="p-8 md:p-10 flex flex-col bg-white border border-outline/50 shadow-sm rounded-[12px] overflow-hidden ring-1 ring-black/[0.04] text-center">
             <div class="text-3xl md:text-4xl font-bold text-zinc-900 tabular-nums leading-none mb-2" id="cnt-avg">—</div>
             <div class="text-xs font-label uppercase tracking-wide text-on-surface-variant">{t.supportTable.scoreAvg}</div>
           </div>
@@ -229,7 +235,10 @@ const filterIdle =
         aria-label="Score legend"
       >
         <span class="inline-flex items-center gap-1.5"
-          ><span class="h-2.5 w-2.5 rounded-full bg-emerald-500" aria-hidden="true"></span> ≥ 0.8</span
+          ><span class="h-2.5 w-2.5 rounded-full bg-emerald-500" aria-hidden="true"></span> ≥ 0.9</span
+        >
+        <span class="inline-flex items-center gap-1.5"
+          ><span class="h-2.5 w-2.5 rounded-full bg-teal-500" aria-hidden="true"></span> 0.8–0.9</span
         >
         <span class="inline-flex items-center gap-1.5"
           ><span class="h-2.5 w-2.5 rounded-full bg-lime-500" aria-hidden="true"></span> 0.6–0.8</span
@@ -256,6 +265,9 @@ const filterIdle =
           </button>
           <button type="button" class={filterIdle} data-filter="great">
             {t.supportTable.filterGreat} <span id="b-great">—</span>
+          </button>
+          <button type="button" class={filterIdle} data-filter="high8">
+            {t.supportTable.filterHigh8} <span id="b-high8">—</span>
           </button>
           <button type="button" class={filterIdle} data-filter="mid-hi">
             {t.supportTable.filterMidHi} <span id="b-mid-hi">—</span>

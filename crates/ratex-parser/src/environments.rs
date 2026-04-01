@@ -980,7 +980,6 @@ fn cd_structure_row(cells: Vec<ParseNode>, mode: Mode) -> Vec<ParseNode> {
     }) && cells.iter().any(|c| matches!(c, ParseNode::CdArrow { .. }));
 
     if is_arrow_row {
-        // Keep only CdArrow cells; insert empty OrdGroup fillers between each pair
         let arrows: Vec<ParseNode> = cells
             .into_iter()
             .filter(|c| matches!(c, ParseNode::CdArrow { .. }))

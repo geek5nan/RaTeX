@@ -5,7 +5,7 @@
   "description": "Extract KaTeX layout dimensions for comparison with ratex-layout",
   "type": "module",
   "dependencies": {
-    "katex": "^0.16.38",
+    "katex": "^0.16.44",
     "tsx": "^4.21.0"
   }
 }

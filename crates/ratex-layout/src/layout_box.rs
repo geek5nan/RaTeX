@@ -69,6 +69,9 @@ pub enum BoxContent {
         /// Italic correction of the base character (em). Superscript x is offset by this amount
         /// beyond base.width, matching KaTeX's margin-right on italic math symbols.
         italic_correction: f64,
+        /// Horizontal kern (em) applied to the subscript: KaTeX uses `margin-left: -base.italic` on
+        /// `SymbolNode` bases so subscripts are not pushed out by the base's italic correction.
+        sub_h_kern: f64,
     },
 
     /// A radical (square root).
@@ -103,6 +106,8 @@ pub enum BoxContent {
         clearance: f64,
         skew: f64,
         is_below: bool,
+        /// KaTeX `accentunder.js`: extra em gap between base bottom and under-accent (e.g. 0.12 for `\\utilde`).
+        under_gap_em: f64,
     },
 
     /// A stretchy delimiter (\left, \right) wrapping inner content.
@@ -125,8 +130,8 @@ pub enum BoxContent {
         /// Extra x padding before the first column (= arraycolsep when hskip_before_and_after is true).
         content_x_offset: f64,
         /// For each column boundary (0 = before col 0, ..., num_cols = after last col),
-        /// whether there is a vertical rule separator ('|').
-        col_separators: Vec<bool>,
+        /// the vertical rule separator type: None = no rule, Some(false) = solid '|', Some(true) = dashed ':'.
+        col_separators: Vec<Option<bool>>,
         /// For each row boundary (0 = before row 0, ..., num_rows = after last row),
         /// the list of hlines: false = solid, true = dashed.
         hlines_before_row: Vec<Vec<bool>>,

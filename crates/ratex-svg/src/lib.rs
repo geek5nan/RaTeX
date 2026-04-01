@@ -199,6 +199,7 @@ fn katex_face(font: &str) -> (&'static str, &'static str, &'static str) {
         "AMS-Regular" => ("KaTeX_AMS", "normal", "normal"),
         "Caligraphic-Regular" => ("KaTeX_Caligraphic", "normal", "normal"),
         "Fraktur-Regular" => ("KaTeX_Fraktur", "normal", "normal"),
+        "Fraktur-Bold" => ("KaTeX_Fraktur", "bold", "normal"),
         "SansSerif-Regular" => ("KaTeX_SansSerif", "normal", "normal"),
         "SansSerif-Bold" => ("KaTeX_SansSerif", "bold", "normal"),
         "SansSerif-Italic" => ("KaTeX_SansSerif", "normal", "italic"),

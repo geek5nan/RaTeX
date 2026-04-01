@@ -7,7 +7,12 @@ use crate::parse_node::ParseNode;
 pub fn register(map: &mut HashMap<&'static str, FunctionSpec>) {
     define_function_full(
         map,
-        &["\\overbrace", "\\underbrace"],
+        &[
+            "\\overbrace",
+            "\\underbrace",
+            "\\overbracket",
+            "\\underbracket",
+        ],
         "horizBrace",
         1, 0, None,
         false, false, true, false, false,

@@ -1,10 +1,13 @@
 use ratex_types::PathCommand;
 
-/// Returns (commands, width, height, fill) for a KaTeX SVG accent,
-/// or None if the label is not handled here.
+/// Returns (commands, width, height, fill) for a KaTeX SVG accent, or `None` if unhandled.
+///
+/// `group_len` is KaTeX’s `groupLength(base)` (`ordgroup.body.length`) for `\\widehat` /
+/// `\\widecheck` / `\\widetilde` / `\\utilde` — variant choice uses this, not base width.
 pub fn katex_accent_path(
     label: &str,
     base_width_em: f64,
+    group_len: usize,
 ) -> Option<(Vec<PathCommand>, f64, f64, bool)> {
     match label {
         "\\vec" => {
@@ -17,12 +20,12 @@ pub fn katex_accent_path(
         }
         "\\widehat" | "\\widecheck" => {
             let is_hat = label == "\\widehat";
-            let (path, vb_w, vb_h, h_em) = select_hat_check(base_width_em, is_hat);
+            let (path, vb_w, vb_h, h_em) = select_hat_check(is_hat, group_len);
             let cmds = parse_and_fit_nonuniform(path, vb_w, vb_h, base_width_em, h_em);
             Some((cmds, base_width_em, h_em, true))
         }
         "\\widetilde" | "\\utilde" => {
-            let (path, vb_w, vb_h, h_em) = select_tilde(base_width_em);
+            let (path, vb_w, vb_h, h_em) = select_tilde(group_len);
             let cmds = parse_and_fit_nonuniform(path, vb_w, vb_h, base_width_em, h_em);
             Some((cmds, base_width_em, h_em, true))
         }
@@ -283,23 +286,40 @@ fn scale_svg_path_thousandths(cmds: &[PathCommand]) -> Vec<PathCommand> {
         .collect()
 }
 
-/// KaTeX selects widehat/widecheck variant by character count.
-/// We approximate using width: < 0.7 → 1 char, < 1.2 → 2, < 2.0 → 3-4, else 5+.
-fn select_hat_check(width_em: f64, is_hat: bool) -> (&'static str, f64, f64, f64) {
-    let idx = if width_em < 0.7 { 1 } else if width_em < 1.2 { 2 } else if width_em < 2.0 { 3 } else { 4 };
-    let prefix = if is_hat { &WIDEHAT } else { &WIDECHECK };
-    let vb_w = [0.0, 1062.0, 2364.0, 2364.0, 2364.0][idx];
-    let vb_h = [0.0, 239.0, 300.0, 360.0, 420.0][idx];
-    let h_em = [0.0, 0.24, 0.3, 0.36, 0.42][idx];
-    (prefix[idx - 1], vb_w, vb_h, h_em)
+/// KaTeX `svgSpan` / `svgGeometry.js`: `imgIndex = [1,1,2,2,3,3][numChars]` for `numChars` ≤ 5;
+/// `numChars > 5` uses the fourth (widest/tallest) asset.
+fn wide_accent_img_index(group_len: usize) -> usize {
+    if group_len > 5 {
+        4
+    } else {
+        [1, 1, 2, 2, 3, 3][group_len]
+    }
 }
 
-fn select_tilde(width_em: f64) -> (&'static str, f64, f64, f64) {
-    let idx = if width_em < 0.7 { 1 } else if width_em < 1.2 { 2 } else if width_em < 2.0 { 3 } else { 4 };
-    let vb_w = [0.0, 600.0, 1033.0, 2339.0, 2340.0][idx];
-    let vb_h = [0.0, 260.0, 286.0, 306.0, 312.0][idx];
-    let h_em = [0.0, 0.26, 0.286, 0.306, 0.34][idx];
-    (TILDE[idx - 1], vb_w, vb_h, h_em)
+fn select_hat_check(is_hat: bool, group_len: usize) -> (&'static str, f64, f64, f64) {
+    let img_index = wide_accent_img_index(group_len);
+    let prefix = if is_hat { &WIDEHAT } else { &WIDECHECK };
+    let vb_w = [0.0, 1062.0, 2364.0, 2364.0, 2364.0][img_index];
+    let vb_h = [0.0, 239.0, 300.0, 360.0, 420.0][img_index];
+    // KaTeX: `_height = [0, 0.24, 0.3, 0.3, 0.36, 0.42][imgIndex]`; `numChars > 5` forces 0.42.
+    let h_em = if group_len > 5 {
+        0.42
+    } else {
+        [0.0, 0.24, 0.3, 0.3, 0.36, 0.42][img_index]
+    };
+    (prefix[img_index - 1], vb_w, vb_h, h_em)
+}
+
+fn select_tilde(group_len: usize) -> (&'static str, f64, f64, f64) {
+    let img_index = wide_accent_img_index(group_len);
+    let vb_w = [0.0, 600.0, 1033.0, 2339.0, 2340.0][img_index];
+    let vb_h = [0.0, 260.0, 286.0, 306.0, 312.0][img_index];
+    let h_em = if group_len > 5 {
+        0.34
+    } else {
+        [0.0, 0.26, 0.286, 0.3, 0.306, 0.34][img_index]
+    };
+    (TILDE[img_index - 1], vb_w, vb_h, h_em)
 }
 
 /// Parse SVG path and scale with independent X/Y factors (preserveAspectRatio="none").
@@ -813,6 +833,12 @@ const RIGHTGROUP: &str = "M0 80h399565c371 0 266.7 149.4 414 180 5.9 1.2 18 0 18
 // rightgroupunder (for \undergroup, viewBox 400000×342)
 const RIGHTGROUPUNDER: &str = "M0 262h399565c371 0 266.7-149.4 414-180 5.9-1.2 18 0 18 0 2 0 3 1 3 3v38c-76 158-257 219-435 219H0z";
 
+// Horizontal brackets (KaTeX `svgGeometry.ts`, viewBox 400000×440 / 410)
+const LEFTBRACKETOVER: &str = "M0 440 h120 V150 H399995 v-120 H0z";
+const RIGHTBRACKETOVER: &str = "M399995 440 h-120 V150 H0 v-120 H399995z";
+const LEFTBRACKETUNDER: &str = "M0 0 h120 V290 H399995 v120 H0z";
+const RIGHTBRACKETUNDER: &str = "M399995 0 h-120 V290 H0 v120 H400000z";
+
 // vec from glyph U+20D7 in font KaTeX Main
 const _VEC_KATEX: &str = "M377 20c0-5.333 1.833-10 5.5-14S391 0 397 0c4.667 0 8.667 1.667 12 5 3.333 2.667 6.667 9 10 19 6.667 24.667 20.333 43.667 41 57 7.333 4.667 11 10.667 11 18 0 6-1 10-3 12s-6.667 5-14 9c-28.667 14.667-53.667 35.667-75 63-1.333 1.333-3.167 3.5-5.5 6.5s-4 4.833-5 5.5c-1 .667-2.5 1.333-4.5 2s-4.333 1-7 1c-4.667 0-9.167-1.833-13.5-5.5S337 184 337 178c0-12.667 15.667-32.333 47-59 H213l-171-1c-8.667-6-13-12.333-13-19 0-4.667 4.333-11.333 13-20h359 c-16-25.333-24-45-24-59z";
 
@@ -872,6 +898,9 @@ fn katex_image_data(label: &str) -> Option<KatexImageData> {
         // Overbrace/underbrace: KaTeX Size4 glyphs (viewBox 400000×548), same 3-piece horizontal joining as stretchy arrows.
         "overbrace"  => Some(KatexImageData { paths: &["leftbrace", "midbrace", "rightbrace"], min_width: 0.888, vb_height: 548.0, align: None }),
         "underbrace" => Some(KatexImageData { paths: &["leftbraceunder", "midbraceunder", "rightbraceunder"], min_width: 0.888, vb_height: 548.0, align: None }),
+        // mathtools `\overbracket` / `\underbracket`: 2-piece KaTeX SVG (same minWidth/height as KaTeX `stretchy.ts`).
+        "overbracket"  => Some(KatexImageData { paths: &["leftbracketover", "rightbracketover"], min_width: 1.6, vb_height: 440.0, align: None }),
+        "underbracket" => Some(KatexImageData { paths: &["leftbracketunder", "rightbracketunder"], min_width: 1.6, vb_height: 410.0, align: None }),
         _ => None,
     }
 }
@@ -923,6 +952,10 @@ fn path_for_name(name: &str) -> Option<&'static str> {
         "leftgroupunder"       => Some(LEFTGROUPUNDER),
         "rightgroup"           => Some(RIGHTGROUP),
         "rightgroupunder"      => Some(RIGHTGROUPUNDER),
+        "leftbracketover"      => Some(LEFTBRACKETOVER),
+        "rightbracketover"     => Some(RIGHTBRACKETOVER),
+        "leftbracketunder"     => Some(LEFTBRACKETUNDER),
+        "rightbracketunder"    => Some(RIGHTBRACKETUNDER),
         _ => None,
     }
 }
@@ -1142,13 +1175,13 @@ mod tests {
 
     #[test]
     fn test_katex_accent_widehat() {
-        let result = katex_accent_path("\\widehat", 1.5);
+        let result = katex_accent_path("\\widehat", 1.5, 1);
         assert!(result.is_some());
     }
 
     #[test]
     fn test_katex_accent_overgroup() {
-        let result = katex_accent_path("\\overgroup", 1.5);
+        let result = katex_accent_path("\\overgroup", 1.5, 1);
         assert!(result.is_some());
     }
 

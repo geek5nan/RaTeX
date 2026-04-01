@@ -220,7 +220,7 @@ fn accent_bar_a() {
 
 #[test]
 fn accent_tilde_n() {
-    check("\\tilde{n}", 0.74842, 0.0);
+    check("\\tilde{n}", 0.66786, 0.0);
 }
 
 #[test]
