@@ -30,10 +30,17 @@ fn main() {
         .and_then(|s| s.parse::<f32>().ok())
         .unwrap_or(1.0);
 
+    let font_size = args
+        .iter()
+        .position(|a| a == "--font-size")
+        .and_then(|i| args.get(i + 1))
+        .and_then(|s| s.parse::<f32>().ok())
+        .unwrap_or(40.0);
+
     std::fs::create_dir_all(&output_dir).expect("Failed to create output dir");
 
     let options = RenderOptions {
-        font_size: 40.0,
+        font_size,
         padding: 10.0,
         font_dir,
         device_pixel_ratio,

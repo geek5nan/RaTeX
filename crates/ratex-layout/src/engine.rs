@@ -3720,6 +3720,28 @@ fn stretchy_accent_path(label: &str, width: f64, height: f64) -> Vec<PathCommand
 // CD (amscd commutative diagram) layout
 // ============================================================================
 
+/// Wrap a horizontal arrow cell with left/right kerns (KaTeX `.cd-arrow-pad`).
+fn cd_wrap_hpad(inner: LayoutBox, pad_l: f64, pad_r: f64, color: Color) -> LayoutBox {
+    let h = inner.height;
+    let d = inner.depth;
+    let w = inner.width + pad_l + pad_r;
+    let mut children: Vec<LayoutBox> = Vec::with_capacity(3);
+    if pad_l > 0.0 {
+        children.push(LayoutBox::new_kern(pad_l));
+    }
+    children.push(inner);
+    if pad_r > 0.0 {
+        children.push(LayoutBox::new_kern(pad_r));
+    }
+    LayoutBox {
+        width: w,
+        height: h,
+        depth: d,
+        content: BoxContent::HBox(children),
+        color,
+    }
+}
+
 /// Wrap a side label for a vertical CD arrow so it is vertically centered on the shaft.
 ///
 /// The resulting box reports `height = box_h, depth = box_d` (same as the shaft) so it
@@ -3925,15 +3947,23 @@ fn layout_cd_arrow(
                 color: options.color,
             };
 
-            // Total height/depth for OpLimits (mirrors layout_xarrow)
+            // Total height/depth for OpLimits (mirrors layout_xarrow / KaTeX arrow.ts)
             let gap = 0.111;
             let sup_h = above_box.as_ref().map(|b| b.height * sup_ratio).unwrap_or(0.0);
             let sup_d = above_box.as_ref().map(|b| b.depth * sup_ratio).unwrap_or(0.0);
-            let height = axis + arrow_half + gap + sup_h + sup_d;
-            let depth = if let Some(ref bel) = below_box {
-                let sub_h = bel.height * sub_ratio;
-                let sub_d = bel.depth * sub_ratio;
-                (arrow_half - axis).max(0.0) + gap + sub_h + sub_d
+            // KaTeX arrow.ts: label depth only shifts the label up when depth > 0.25
+            // (at the label's own scale). Otherwise the label baseline stays fixed and
+            // depth extends into the gap without increasing the cell height.
+            let sup_d_contrib = if above_box.as_ref().map(|b| b.depth).unwrap_or(0.0) > 0.25 {
+                sup_d
+            } else {
+                0.0
+            };
+            let height = axis + arrow_half + gap + sup_h + sup_d_contrib;
+            let sub_h_raw = below_box.as_ref().map(|b| b.height * sub_ratio).unwrap_or(0.0);
+            let sub_d_raw = below_box.as_ref().map(|b| b.depth * sub_ratio).unwrap_or(0.0);
+            let depth = if below_box.is_some() {
+                (arrow_half - axis).max(0.0) + gap + sub_h_raw + sub_d_raw
             } else {
                 (arrow_half - axis).max(0.0)
             };
@@ -3963,21 +3993,7 @@ fn layout_cd_arrow(
                 let extra = target_col_width - inner.width;
                 let kl = extra / 2.0;
                 let kr = extra - kl;
-                let mut children: Vec<LayoutBox> = Vec::with_capacity(3);
-                if kl > 0.0 {
-                    children.push(LayoutBox::new_kern(kl));
-                }
-                children.push(inner);
-                if kr > 0.0 {
-                    children.push(LayoutBox::new_kern(kr));
-                }
-                LayoutBox {
-                    width: target_col_width,
-                    height,
-                    depth,
-                    content: BoxContent::HBox(children),
-                    color: options.color,
-                }
+                cd_wrap_hpad(inner, kl, kr, options.color)
             } else {
                 inner
             }
@@ -3998,9 +4014,9 @@ fn layout_cd_arrow(
                 "up" if target_size > 0.0 => {
                     cd_stretch_vert_arrow_box(target_size.max(1.0), false, options)
                 }
-                "down" => make_stretchy_delim("\\downarrow", big_total, options),
-                "up" => make_stretchy_delim("\\uparrow", big_total, options),
-                _ => make_stretchy_delim("\\downarrow", big_total, options),
+                "down" => cd_stretch_vert_arrow_box(big_total, true, options),
+                "up" => cd_stretch_vert_arrow_box(big_total, false, options),
+                _ => cd_stretch_vert_arrow_box(big_total, true, options),
             };
             let box_h = shaft_box.height;
             let box_d = shaft_box.depth;
@@ -4062,10 +4078,8 @@ fn layout_cd_arrow(
 fn layout_cd(body: &[Vec<ParseNode>], options: &LayoutOptions) -> LayoutBox {
     let metrics = options.metrics();
     let pt = 1.0 / metrics.pt_per_em;
-    // KaTeX `environments/array.js`: CD uses baselineskip = 3ex (not 12pt like plain arrays).
-    // That yields enough vertical gap between object rows so the diagram height matches amscd/KaTeX.
+    // KaTeX CD uses `baselineskip = 3ex` (array.ts line 312), NOT the standard 12pt.
     let baselineskip = 3.0 * metrics.x_height;
-    // Use a standard strut for CD rows (same 0.7/0.3 split as \@arstrut / KaTeX arstrutHeight/Depth).
     let arstrut_h = 0.7 * baselineskip;
     let arstrut_d = 0.3 * baselineskip;
 
@@ -4109,8 +4123,6 @@ fn layout_cd(body: &[Vec<ParseNode>], options: &LayoutOptions) -> LayoutBox {
                 other => layout_node(other, options),
             };
 
-            // KaTeX array builder takes max height/depth over every cell in the row — including
-            // horizontal arrows in arrow rows (do not skip odd columns).
             row_heights[r] = row_heights[r].max(cbox.height);
             row_depths[r] = row_depths[r].max(cbox.depth);
             col_widths[c] = col_widths[c].max(cbox.width);
@@ -4129,19 +4141,30 @@ fn layout_cd(body: &[Vec<ParseNode>], options: &LayoutOptions) -> LayoutBox {
     // not “stretch every row to column max”.
     let col_target_w: Vec<f64> = col_widths.clone();
 
+    #[cfg(debug_assertions)]
+    {
+        eprintln!("[CD] pass1 col_widths={col_widths:?} row_heights={row_heights:?} row_depths={row_depths:?}");
+        for (r, row) in cell_boxes.iter().enumerate() {
+            for (c, b) in row.iter().enumerate() {
+                if b.width > 0.0 {
+                    eprintln!("[CD]   cell[{r}][{c}] w={:.4} h={:.4} d={:.4}", b.width, b.height, b.depth);
+                }
+            }
+        }
+    }
+
     // ── Pass 2: re-layout arrow cells with target dimensions ───────────────
     for (r, row) in body.iter().enumerate() {
         let is_arrow_row = r % 2 == 1;
         for (c, cell) in row.iter().enumerate() {
             if let ParseNode::CdArrow { direction, label_above, label_below, .. } = cell {
-                let (new_box, col_w) = if !is_arrow_row && c % 2 == 1 {
-                    // Horizontal: shaft = this cell's pass-1 width; center in `col_target_w[c]`.
-                    let shaft_pass1 = cell_boxes[r][c].width;
+                let is_horiz = matches!(direction.as_str(), "right" | "left" | "horiz_eq");
+                let (new_box, col_w) = if !is_arrow_row && c % 2 == 1 && is_horiz {
                     let b = layout_cd_arrow(
                         direction,
                         label_above.as_deref(),
                         label_below.as_deref(),
-                        shaft_pass1,
+                        cell_boxes[r][c].width,
                         col_target_w[c],
                         0.0,
                         options,
@@ -4149,14 +4172,16 @@ fn layout_cd(body: &[Vec<ParseNode>], options: &LayoutOptions) -> LayoutBox {
                     let w = b.width;
                     (b, w)
                 } else if is_arrow_row && c % 2 == 0 {
-                    // Vertical arrow: stretch shaft to the full arrow-row height (incl. future `\jot`).
-                    let v_span = row_heights[r] + row_depths[r] + jot;
+                    // Vertical arrow: KaTeX uses a fixed `\Big` delimiter, not a
+                    // stretchy arrow.  Match by using the pass-1 row span (without
+                    // \jot) so the shaft height stays at the natural row h+d.
+                    let v_span = row_heights[r] + row_depths[r];
                     let b = layout_cd_arrow(
                         direction,
                         label_above.as_deref(),
                         label_below.as_deref(),
                         v_span,
-                        col_widths[c], // center shaft within column
+                        col_widths[c],
                         0.0,
                         options,
                     );
@@ -4171,6 +4196,11 @@ fn layout_cd(body: &[Vec<ParseNode>], options: &LayoutOptions) -> LayoutBox {
         }
     }
 
+    #[cfg(debug_assertions)]
+    {
+        eprintln!("[CD] pass2 col_widths={col_widths:?} row_heights={row_heights:?} row_depths={row_depths:?}");
+    }
+
     // KaTeX `environments/cd.js` sets `addJot: true` for CD; `array.js` adds `\jot` (3pt) to each
     // row's depth (same as `layout_array` when `add_jot` is set).
     for rd in &mut row_depths {
@@ -4178,10 +4208,10 @@ fn layout_cd(body: &[Vec<ParseNode>], options: &LayoutOptions) -> LayoutBox {
     }
 
     // ── Build the final Array LayoutBox ────────────────────────────────────
-    // Inter-column gap: KaTeX `cd.js` 0.25+0.25 per boundary; golden PNGs match ~0.36–0.40em
-    // total per boundary in ink bbox at 40px (see `tools/golden_compare` score on 0150).
-    const CD_INTERCOLUMN_GAP_EM: f64 = 0.18;
-    let col_gap = CD_INTERCOLUMN_GAP_EM;
+    // KaTeX CD uses `pregap: 0.25, postgap: 0.25` per column (cd.ts line 216-217),
+    // giving 0.5em between adjacent columns.  `hskipBeforeAndAfter` is unset (false),
+    // so no outer padding.
+    let col_gap = 0.5;
 
     // Column alignment: objects are centered, arrows are centered
     let col_aligns: Vec<u8> = (0..num_cols).map(|_| b'c').collect();
