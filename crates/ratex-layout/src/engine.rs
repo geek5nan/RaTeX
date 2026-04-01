@@ -887,6 +887,10 @@ fn layout_supsub(
 
     let is_char_box = base.is_some_and(is_character_box);
     let metrics = options.metrics();
+    // KaTeX `supsub.js`: each script span gets `marginRight: (0.5pt/ptPerEm)/sizeMultiplier`
+    // (TeX `\scriptspace`). Without this, sub/sup boxes are too narrow vs KaTeX (e.g. `pmatrix`
+    // column widths and inter-column alignment in golden tests).
+    let script_space = 0.5 / metrics.pt_per_em / options.size_multiplier();
 
     let sup_style = options.style.superscript();
     let sub_style = options.style.subscript();
@@ -999,17 +1003,21 @@ fn layout_supsub(
     if let Some(ref sup_b) = sup_box {
         height = height.max(sup_shift + sup_height_scaled);
         if center_scripts {
-            total_width = total_width.max(sup_b.width * sup_ratio);
+            total_width = total_width.max(sup_b.width * sup_ratio + script_space);
         } else {
-            total_width = total_width.max(base_box.width + italic_correction + sup_b.width * sup_ratio);
+            total_width = total_width.max(
+                base_box.width + italic_correction + sup_b.width * sup_ratio + script_space,
+            );
         }
     }
     if let Some(ref sub_b) = sub_box {
         depth = depth.max(sub_shift + sub_depth_scaled);
         if center_scripts {
-            total_width = total_width.max(sub_b.width * sub_ratio);
+            total_width = total_width.max(sub_b.width * sub_ratio + script_space);
         } else {
-            total_width = total_width.max(base_box.width + sub_h_kern + sub_b.width * sub_ratio);
+            total_width = total_width.max(
+                base_box.width + sub_h_kern + sub_b.width * sub_ratio + script_space,
+            );
         }
     }
 
@@ -3141,7 +3149,12 @@ fn node_math_class(node: &ParseNode) -> Option<MathClass> {
         ParseNode::Atom { family, .. } => Some(family_to_math_class(*family)),
         ParseNode::OpToken { .. } | ParseNode::Op { .. } | ParseNode::OperatorName { .. } => Some(MathClass::Op),
         ParseNode::OrdGroup { .. } => Some(MathClass::Ord),
-        ParseNode::GenFrac { .. } => Some(MathClass::Inner),
+        // KaTeX genfrac.js: with delimiters (e.g. \binom) → mord; without (e.g. \frac) → minner.
+        ParseNode::GenFrac { left_delim, right_delim, .. } => {
+            let has_delim = left_delim.as_ref().is_some_and(|d| !d.is_empty() && d != ".")
+                || right_delim.as_ref().is_some_and(|d| !d.is_empty() && d != ".");
+            if has_delim { Some(MathClass::Ord) } else { Some(MathClass::Inner) }
+        }
         ParseNode::Sqrt { .. } => Some(MathClass::Ord),
         ParseNode::SupSub { base, .. } => {
             base.as_ref().and_then(|b| node_math_class(b))
