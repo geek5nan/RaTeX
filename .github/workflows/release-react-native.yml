@@ -76,7 +76,9 @@ jobs:
           cp -R platforms/android/src/main/jniLibs/* platforms/react-native/android/src/main/jniLibs/
           rm -rf platforms/react-native/ios/RaTeX.xcframework
           cp -R platforms/ios/RaTeX.xcframework platforms/react-native/ios/
-          echo "jniLibs and XCFramework injected into platforms/react-native"
+          # Resolve iOS font symlinks to real files so npm pack includes them
+          cp -fL fonts/*.ttf platforms/react-native/ios/Fonts/
+          echo "jniLibs, XCFramework, and fonts injected into platforms/react-native"
 
       - name: Setup Node
         uses: actions/setup-node@v4
