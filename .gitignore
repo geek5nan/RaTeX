@@ -38,7 +38,10 @@ platforms/ios/RaTeX.xcframework/
 platforms/flutter/ios/RaTeX.xcframework/
 platforms/flutter/android/src/main/jniLibs/
 
-# React Native — build caches (binaries are tracked for npm publishing)
+# React Native — native binaries built by CI, not committed
+platforms/react-native/android/src/main/jniLibs/
+platforms/react-native/ios/RaTeX.xcframework/
+# Build caches
 platforms/react-native/android/build/
 platforms/react-native/android/.cxx/
 platforms/react-native/ios/build/

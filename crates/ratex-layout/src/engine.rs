@@ -969,18 +969,14 @@ fn layout_supsub(
             .max(sup_depth_scaled + 0.25 * metrics.x_height);
     }
 
-    // `\overbrace{…}^{…}` / `\underbrace{…}_{…}`: default sup_shift = height - sup_drop places
-    // the script baseline *inside* tall atoms (by design for single glyphs). For stretchy
-    // horizontal braces the label must sit above/below the ink with limit-style clearance.
+    // KaTeX `horizBrace.js` htmlBuilder: the script is placed using a VList with a fixed 0.2em
+    // kern between the brace result and the script, plus the script's own (scaled) dimensions.
+    // This overrides the default TeX Rule 18 sub_shift / sup_shift with the exact KaTeX layout.
     if horiz_brace_over && sup_box.is_some() {
-        sup_shift += sup_style_metrics.sup_drop * sup_ratio;
-        // Same order of gap as `\xrightarrow` labels (`big_op_spacing1` ≈ 2mu); extra +0.3em
-        // pushed the script too far above the brace vs KaTeX reference (golden 0603).
-        sup_shift += metrics.big_op_spacing1;
+        sup_shift = base_box.height + 0.2 + sup_depth_scaled;
     }
     if horiz_brace_under && sub_box.is_some() {
-        sub_shift += sub_style_metrics.sub_drop * sub_ratio;
-        sub_shift += metrics.big_op_spacing2 + 0.2;
+        sub_shift = base_box.depth + 0.2 + sub_height_scaled;
     }
 
     // Superscript horizontal offset: `layout_symbol` already uses advance width + italic
@@ -1377,6 +1373,9 @@ fn layout_op_with_limits(
         _ => return layout_supsub(Some(base_node), sup_node, sub_node, options, None),
     };
 
+    // KaTeX-exact limit kerning (no +0.08em) for `\overset`/`\underset` only (`suppress_base_shift`).
+    let legacy_limit_kern_padding = !suppress_base_shift;
+
     let (base_box, slant) = build_op_base(name, symbol, body, options);
     // baseShift only applies to symbol operators (KaTeX: base instanceof SymbolNode)
     let base_shift = if symbol && !suppress_base_shift {
@@ -1385,16 +1384,28 @@ fn layout_op_with_limits(
         0.0
     };
 
-    layout_op_limits_inner(&base_box, sup_node, sub_node, slant, base_shift, options)
+    layout_op_limits_inner(
+        &base_box,
+        sup_node,
+        sub_node,
+        slant,
+        base_shift,
+        legacy_limit_kern_padding,
+        options,
+    )
 }
 
-/// Assemble an operator with limits above/below (KaTeX's assembleSupSub).
+/// Assemble an operator with limits above/below (KaTeX's `assembleSupSub`).
+///
+/// `legacy_limit_kern_padding`: +0.08em on limit kerns for all ops except `\overset`/`\underset`
+/// (`ParseNode::Op { suppress_base_shift: true }`), matching KaTeX on `\dddot`/`\ddddot` PNGs.
 fn layout_op_limits_inner(
     base: &LayoutBox,
     sup_node: Option<&ParseNode>,
     sub_node: Option<&ParseNode>,
     slant: f64,
     base_shift: f64,
+    legacy_limit_kern_padding: bool,
     options: &LayoutOptions,
 ) -> LayoutBox {
     let metrics = options.metrics();
@@ -1404,22 +1415,32 @@ fn layout_op_limits_inner(
     let sup_ratio = sup_style.size_multiplier() / options.style.size_multiplier();
     let sub_ratio = sub_style.size_multiplier() / options.style.size_multiplier();
 
-    // Extra vertical padding so limits don't sit too close to the operator (e.g. ∫_0^1).
-    let extra_clearance = 0.08_f64;
+    let extra_kern = if legacy_limit_kern_padding { 0.08_f64 } else { 0.0_f64 };
 
     let sup_data = sup_node.map(|s| {
         let sup_opts = options.with_style(sup_style);
         let elem = layout_node(s, &sup_opts);
-        let kern = (metrics.big_op_spacing1 + extra_clearance)
-            .max(metrics.big_op_spacing3 - elem.depth * sup_ratio + extra_clearance);
+        // `\overset`/`\underset`: KaTeX `assembleSupSub` uses `elem.depth` as-is. Other limits
+        // (e.g. `\lim\limits_x`) keep the legacy `depth * sup_ratio` term so ink scores stay
+        // aligned with our KaTeX PNG fixtures.
+        let d = if legacy_limit_kern_padding {
+            elem.depth * sup_ratio
+        } else {
+            elem.depth
+        };
+        let kern = (metrics.big_op_spacing1 + extra_kern).max(metrics.big_op_spacing3 - d + extra_kern);
         (elem, kern)
     });
 
     let sub_data = sub_node.map(|s| {
         let sub_opts = options.with_style(sub_style);
         let elem = layout_node(s, &sub_opts);
-        let kern = (metrics.big_op_spacing2 + extra_clearance)
-            .max(metrics.big_op_spacing4 - elem.height * sub_ratio + extra_clearance);
+        let h = if legacy_limit_kern_padding {
+            elem.height * sub_ratio
+        } else {
+            elem.height
+        };
+        let kern = (metrics.big_op_spacing2 + extra_kern).max(metrics.big_op_spacing4 - h + extra_kern);
         (elem, kern)
     });
 
@@ -2551,7 +2572,9 @@ fn layout_sizing(size: u8, body: &[ParseNode], options: &LayoutOptions) -> Layou
         _ => 1.0,
     };
 
-    let inner = layout_expression(body, options, true);
+    // KaTeX `Options.havingSize`: inner is built in `this.style.text()` (≥ textstyle).
+    let inner_opts = options.with_style(options.style.text());
+    let inner = layout_expression(body, &inner_opts, true);
     let ratio = multiplier / options.size_multiplier();
     if (ratio - 1.0).abs() < 0.001 {
         inner
@@ -2609,6 +2632,13 @@ fn layout_verb(body: &str, star: bool, options: &LayoutOptions) -> LayoutBox {
     hbox
 }
 
+/// Lay out `\text{…}` / `HBox` contents as a simple horizontal row.
+///
+/// KaTeX's HTML builder may merge consecutive text symbols into **one** DOM text run; the
+/// browser then applies OpenType kerning (GPOS) on that run. We place each character using
+/// bundled TeX metrics only (no GPOS), so compared to Puppeteer+KaTeX PNGs, long `\text{…}`
+/// strings can appear slightly wider with a small cumulative horizontal shift — not a wrong
+/// font file, but a shaping model difference.
 fn layout_text(body: &[ParseNode], options: &LayoutOptions) -> LayoutBox {
     let mut children = Vec::new();
     for node in body {
@@ -3206,9 +3236,20 @@ fn mclass_str_to_math_class(mclass: &str) -> MathClass {
 }
 
 /// Check if a ParseNode is a single character box (affects sup/sub positioning).
+/// KaTeX `getBaseElem` (`utils.js`): unwrap `ordgroup` / `color` with a single child, and `font`.
+/// Used for TeX "character box" checks in superscript Rule 18a (`supsub.js`).
+fn get_base_elem(node: &ParseNode) -> &ParseNode {
+    match node {
+        ParseNode::OrdGroup { body, .. } if body.len() == 1 => get_base_elem(&body[0]),
+        ParseNode::Color { body, .. } if body.len() == 1 => get_base_elem(&body[0]),
+        ParseNode::Font { body, .. } => get_base_elem(body),
+        _ => node,
+    }
+}
+
 fn is_character_box(node: &ParseNode) -> bool {
     matches!(
-        node,
+        get_base_elem(node),
         ParseNode::MathOrd { .. }
             | ParseNode::TextOrd { .. }
             | ParseNode::Atom { .. }
@@ -3266,20 +3307,18 @@ fn layout_horiz_brace(
             }
         };
 
-    // Shift y-coordinates: centered commands → positioned for over/under
-    // For over: foot at y=0 (bottom), peak goes up → shift by -brace_h/2
-    // For under: foot at y=0 (top), peak goes down → shift by +brace_h/2
-    let y_shift = if is_over {
-        -brace_h / 2.0
-    } else {
-        brace_h / 2.0
-    };
+    // Shift y-coordinates: centered commands → SVG-downward convention (height=0, depth=brace_h).
+    // The raw path is centered at y=0 (range ±brace_h/2). Shift by +brace_h/2 so that:
+    //   overbrace: peak at y=0 (top), feet at y=+brace_h (bottom)
+    //   underbrace: feet at y=0 (top), peak at y=+brace_h (bottom)
+    // Both use height=0, depth=brace_h so the rendering code's SVG accent path handles them.
+    let y_shift = brace_h / 2.0;
     let commands = shift_path_y(raw_commands, y_shift);
 
     let brace_box = LayoutBox {
         width: w,
-        height: if is_over { brace_h } else { 0.0 },
-        depth: if is_over { 0.0 } else { brace_h },
+        height: 0.0,
+        depth: brace_h,
         content: BoxContent::SvgPath {
             commands,
             fill: brace_fill,
@@ -4228,8 +4267,11 @@ fn layout_cd(body: &[Vec<ParseNode>], options: &LayoutOptions) -> LayoutBox {
                         options,
                     )
                 }
+                // KaTeX CD object cells are `styling` nodes; `sizingGroup` builds the body with
+                // `buildExpression(..., false)` (see katex `functions/sizing.js`), so no inter-atom
+                // math glue inside a cell — matching that avoids spurious Ord–Bin space (e.g. golden 0963).
                 ParseNode::OrdGroup { body: cell_body, .. } => {
-                    layout_expression(cell_body, options, true)
+                    layout_expression(cell_body, options, false)
                 }
                 other => layout_node(other, options),
             };

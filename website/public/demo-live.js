@@ -178,7 +178,7 @@ function run() {
   try {
     const dl = JSON.parse(renderLatex(latex));
     const canvas = document.createElement('canvas');
-    canvas.className = 'max-w-full h-auto';
+    canvas.className = 'h-auto';
     drawDisplayList(dl, canvas, 29, 4);
     ratexEl.innerHTML = '';
     ratexEl.appendChild(canvas);
@@ -270,3 +270,4 @@ async function loadFontsAndWasm() {
 }
 
 document.getElementById('formula').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+document.getElementById('render-btn').addEventListener('click', () => run());
