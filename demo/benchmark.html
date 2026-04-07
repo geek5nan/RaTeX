@@ -222,13 +222,29 @@ function calibrateBatch(fn){
   }
   return batch;
 }
-function timeIt(fn, iters){
+// Run synchronously in chunks, yielding to the event loop between chunks so
+// large iters values don't freeze the page. Each individual sample is still
+// measured atomically (no yield mid-batch), so the per-call timing is clean.
+const CHUNK_TARGET_MS = 50;
+async function timeIt(fn, iters, onProgress){
   const batch = calibrateBatch(fn);
   const samples = new Array(iters);
-  for (let i = 0; i < iters; i++){
-    const t0 = performance.now();
-    for (let j = 0; j < batch; j++) fn();
-    samples[i] = (performance.now() - t0) / batch;
+  // size each chunk so it takes ~50ms wall time, based on calibration
+  const tProbe0 = performance.now();
+  for (let j = 0; j < batch; j++) fn();
+  const perSample = Math.max(0.01, (performance.now() - tProbe0));
+  const chunkSize = Math.max(1, Math.min(iters, Math.ceil(CHUNK_TARGET_MS / perSample)));
+
+  let i = 0;
+  while (i < iters){
+    const end = Math.min(iters, i + chunkSize);
+    for (; i < end; i++){
+      const t0 = performance.now();
+      for (let j = 0; j < batch; j++) fn();
+      samples[i] = (performance.now() - t0) / batch;
+    }
+    if (onProgress) onProgress(i, iters);
+    if (i < iters) await new Promise(r => setTimeout(r, 0));
   }
   samples.batch = batch;
   return samples;
@@ -308,8 +324,10 @@ async function runBenchmark(){
     try {
       runners.katex(); runners.ratex();
       for (let w=0; w<warmup; w++){ runners.katex(); runners.ratex(); }
-      const kSamples = timeIt(runners.katex, iters);
-      const rSamples = timeIt(runners.ratex, iters);
+      const progress = (label) => (done, total) =>
+        setStatus('running', `[${i+1}/${FORMULAS.length}] ${f.name} — ${label} ${done}/${total}`);
+      const kSamples = await timeIt(runners.katex, iters, progress('KaTeX'));
+      const rSamples = await timeIt(runners.ratex, iters, progress('RaTeX'));
       kStats = stats(kSamples); kStats.batch = kSamples.batch;
       rStats = stats(rSamples); rStats.batch = rSamples.batch;
       totals.katex.push(kStats.median);
