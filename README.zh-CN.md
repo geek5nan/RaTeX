@@ -63,9 +63,9 @@ RaTeX 是同一个 KaTeX 兼容的数学引擎，但编译到一个可移植的 
 | **Android** | JNI + Kotlin + Canvas · AAR | 开箱即用 |
 | **Flutter** | Dart FFI + `CustomPainter` | 开箱即用 |
 | **React Native** | C ABI Native 模块 · iOS/Android 原生视图 | 开箱即用 |
-| **Web** | WASM → Canvas 2D · `<ratex-formula>` Web 组件 | 可用 |
-| **服务端 / CI** | tiny-skia → PNG 光栅化 | 可用 |
-| **SVG** | `ratex-svg` → 自包含矢量 SVG 导出 | 可用 |
+| **Web** | WASM → Canvas 2D · `<ratex-formula>` Web 组件 | 开箱即用 |
+| **服务端 / CI** | tiny-skia → PNG 光栅化 | 开箱即用 |
+| **SVG** | `ratex-svg` → 自包含矢量 SVG 导出 | 开箱即用 |
 
 ### 截图
 
