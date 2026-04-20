@@ -1,0 +1,202 @@
+[
+  {
+    "id": 1,
+    "formula": "n!",
+    "tier": "trivial"
+  },
+  {
+    "id": 4,
+    "formula": "\\#",
+    "tier": "trivial"
+  },
+  {
+    "id": 5,
+    "formula": "\\%",
+    "tier": "trivial"
+  },
+  {
+    "id": 9,
+    "formula": "a\\ b",
+    "tier": "trivial"
+  },
+  {
+    "id": 400,
+    "formula": "\\Ket{\\psi}",
+    "tier": "trivial"
+  },
+  {
+    "id": 500,
+    "formula": "\\mathfrak{AaBb}",
+    "tier": "trivial"
+  },
+  {
+    "id": 600,
+    "formula": "\\oslash",
+    "tier": "trivial"
+  },
+  {
+    "id": 700,
+    "formula": "\\rVert",
+    "tier": "trivial"
+  },
+  {
+    "id": 7,
+    "formula": "\\text{\\'{a}}",
+    "tier": "simple"
+  },
+  {
+    "id": 12,
+    "formula": "\\text{\\.{a}}",
+    "tier": "simple"
+  },
+  {
+    "id": 358,
+    "formula": "a\\hphantom{bc}d",
+    "tier": "simple"
+  },
+  {
+    "id": 800,
+    "formula": "\\trianglerighteq",
+    "tier": "simple"
+  },
+  {
+    "id": 921,
+    "formula": "\\tilde{M}",
+    "tier": "simple"
+  },
+  {
+    "id": 924,
+    "formula": "\\sqrt{}",
+    "tier": "simple"
+  },
+  {
+    "id": 932,
+    "formula": "\\mathring{A}",
+    "tier": "simple"
+  },
+  {
+    "id": 934,
+    "formula": "\\dot{\\vec{p}} = -\\nabla V",
+    "tier": "simple"
+  },
+  {
+    "id": 8,
+    "formula": "\\text{\\(\\frac a b\\)}",
+    "tier": "medium"
+  },
+  {
+    "id": 744,
+    "formula": "\\sqrt[3]{x}",
+    "tier": "medium"
+  },
+  {
+    "id": 252,
+    "formula": "\\displaystyle\\sum_0^n",
+    "tier": "medium"
+  },
+  {
+    "id": 263,
+    "formula": "\\int_{A_1}\\int_{A_2}\\dotsi",
+    "tier": "medium"
+  },
+  {
+    "id": 6,
+    "formula": "\\begin{matrix} a & b \\\\ c & d \\end{matrix}",
+    "tier": "medium"
+  },
+  {
+    "id": 629,
+    "formula": "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}",
+    "tier": "medium"
+  },
+  {
+    "id": 926,
+    "formula": "\\begin{vmatrix} 1 & 2 & 3 \\\\ 4 & 5 & 6 \\\\ 7 & 8 & 9 \\end{vmatrix}",
+    "tier": "medium"
+  },
+  {
+    "id": 927,
+    "formula": "\\begin{bmatrix} 1 & 0 & 0 \\\\ 0 & 1 & 0 \\\\ 0 & 0 & 1 \\end{bmatrix}",
+    "tier": "medium"
+  },
+  {
+    "id": 922,
+    "formula": "\\left\\{\\begin{array}{l} \\nabla\\cdot\\vec{D} = \\rho \\\\ \\nabla\\cdot\\vec{B} = 0 \\\\ \\nabla\\times\\vec{E} = -\\frac{\\partial\\vec{B}}{\\partial t} \\\\ \\nabla\\times\\vec{H} = \\vec{J}_f + \\frac{\\partial\\vec{D}}{\\partial t} \\end{array}\\right.",
+    "tier": "complex"
+  },
+  {
+    "id": 940,
+    "formula": "\\Gamma^{\\mu}_{\\nu\\rho} = \\tfrac{1}{2}g^{\\mu\\sigma}\\!\\left(\\partial_\\nu g_{\\rho\\sigma}+\\partial_\\rho g_{\\nu\\sigma}-\\partial_\\sigma g_{\\nu\\rho}\\right)",
+    "tier": "complex"
+  },
+  {
+    "id": 929,
+    "formula": "\\begin{pmatrix} 1 & 0 & \\cdots & 0 \\\\ 0 & 1 & \\cdots & 0 \\\\ \\vdots & \\vdots & \\ddots & \\vdots \\\\ 0 & 0 & \\cdots & 1 \\end{pmatrix}",
+    "tier": "complex"
+  },
+  {
+    "id": 930,
+    "formula": "\\begin{bmatrix} A & B \\\\ C & D \\end{bmatrix}\\begin{bmatrix} x \\\\ y \\end{bmatrix} = \\begin{bmatrix} 0 \\\\ 0 \\end{bmatrix}",
+    "tier": "complex"
+  },
+  {
+    "id": 925,
+    "formula": "\\begin{pmatrix} a_{11} & a_{12} & a_{13} \\\\ a_{21} & a_{22} & a_{23} \\\\ a_{31} & a_{32} & a_{33} \\end{pmatrix}",
+    "tier": "complex"
+  },
+  {
+    "id": 928,
+    "formula": "\\begin{pmatrix} \\cos\\theta & -\\sin\\theta & 0 \\\\ \\sin\\theta & \\cos\\theta & 0 \\\\ 0 & 0 & 1 \\end{pmatrix}",
+    "tier": "complex"
+  },
+  {
+    "id": 939,
+    "formula": "T^{\\mu\\nu}{}_{\\rho} = g^{\\mu\\alpha}g^{\\nu\\beta}T_{\\alpha\\beta\\rho}",
+    "tier": "complex"
+  },
+  {
+    "id": 150,
+    "formula": "\\begin{CD} A @>a>> B \\\\ @VbVV @AAcA \\\\ C @= D \\end{CD}",
+    "tier": "complex"
+  },
+  {
+    "id": 956,
+    "formula": "\\ce{CO2 + C -> 2 CO}",
+    "tier": "chem"
+  },
+  {
+    "id": 957,
+    "formula": "\\ce{Hg^2+ ->[I-] HgI2 ->[I-] [Hg^{II}I4]^2-}",
+    "tier": "chem"
+  },
+  {
+    "id": 958,
+    "formula": "\\$C_p[\\ce{H2O(l)}] = \\pu{75.3 J // mol K}\\$",
+    "tier": "chem"
+  },
+  {
+    "id": 988,
+    "formula": "\\ce{(NH4)2S}",
+    "tier": "chem"
+  },
+  {
+    "id": 998,
+    "formula": "\\ce{x Na(NH4)HPO4 ->[\\Delta] (NaPO3)_x + x NH3 ^ + x H2O}",
+    "tier": "chem"
+  },
+  {
+    "id": 1043,
+    "formula": "\\ce{Zn^2+  <=>[+ 2OH-][+ 2H+]  \\$\\underset{\\text{amphoteres Hydroxid}}{\\ce{Zn(OH)2 v}}\\$  <=>[+ 2OH-][+ 2H+]  \\$\\underset{\\text{Hydroxozikat}}{\\ce{[Zn(OH)4]^2-}}\\$}",
+    "tier": "chem"
+  },
+  {
+    "id": 1046,
+    "formula": "\\ce{Hg^2+ ->[I-]  \\$\\underset{\\mathrm{red}}{\\ce{HgI2}}\\$  ->[I-]  \\$\\underset{\\mathrm{red}}{\\ce{[Hg^{II}I4]^2-}}\\$}",
+    "tier": "chem"
+  },
+  {
+    "id": 923,
+    "formula": "酸 + 碱 \\rightarrow 盐 + 水",
+    "tier": "chem"
+  }
+]

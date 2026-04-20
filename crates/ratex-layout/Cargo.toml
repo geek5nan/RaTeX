@@ -13,7 +13,12 @@ ratex-types  = { workspace = true }
 ratex-font   = { workspace = true }
 ratex-parser = { workspace = true }
 serde_json   = { workspace = true }
+serde         = { workspace = true }
 
 [[bin]]
 name = "ratex-layout"
 path = "src/bin/layout.rs"
+
+[[bin]]
+name = "benchmark"
+path = "src/bin/benchmark.rs"
