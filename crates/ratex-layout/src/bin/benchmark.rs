@@ -82,6 +82,7 @@ fn main() {
             "sample_count": sample_count,
             "stats": {
                 "median_ns": stats.median_ns,
+                "p90_ns": stats.p90_ns,
                 "p95_ns": stats.p95_ns,
                 "min_ns": stats.min_ns,
                 "max_ns": stats.max_ns,
@@ -90,14 +91,17 @@ fn main() {
             "stages": {
                 "parse": {
                     "median_ns": parse_stats.median_ns,
+                    "p90_ns": parse_stats.p90_ns,
                     "p95_ns": parse_stats.p95_ns,
                 },
                 "layout": {
                     "median_ns": layout_stats.median_ns,
+                    "p90_ns": layout_stats.p90_ns,
                     "p95_ns": layout_stats.p95_ns,
                 },
                 "to_display": {
                     "median_ns": to_display_stats.median_ns,
+                    "p90_ns": to_display_stats.p90_ns,
                     "p95_ns": to_display_stats.p95_ns,
                 },
             },
@@ -133,6 +137,7 @@ struct FormulaInput {
 
 struct Stats {
     median_ns: u64,
+    p90_ns: u64,
     p95_ns: u64,
     min_ns: u64,
     max_ns: u64,
@@ -208,6 +213,7 @@ fn compute_stats(values: &[u64]) -> Stats {
     let sum: u64 = sorted.iter().sum();
     Stats {
         median_ns: sorted[n / 2],
+        p90_ns: sorted[(n as f64 * 0.90) as usize],
         p95_ns: sorted[(n as f64 * 0.95) as usize],
         min_ns: sorted[0],
         max_ns: sorted[n - 1],
